@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Settings } from "lucide-react";
 
 const PAGE_TITLES: Record<string, string> = {
@@ -15,6 +14,7 @@ const PAGE_TITLES: Record<string, string> = {
 
 export function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const title = PAGE_TITLES[pathname] ?? "Siege";
 
   return (
@@ -24,12 +24,12 @@ export function Header() {
           {title}
         </h1>
         {pathname !== "/settings" && (
-          <Link
-            href="/settings"
+          <button
+            onClick={() => router.push("/settings")}
             className="flex items-center justify-center h-10 w-10 rounded-full text-[hsl(var(--muted-foreground))] active:bg-[rgba(0,0,0,0.04)] transition-colors"
           >
             <Settings className="h-5 w-5" strokeWidth={1.8} />
-          </Link>
+          </button>
         )}
       </div>
     </header>

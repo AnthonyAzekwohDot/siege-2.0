@@ -3,6 +3,7 @@
   "short_name": "Siege",
   "description": "We Don't Negotiate With The Plan",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#fafafa",
   "theme_color": "#3063d9",
