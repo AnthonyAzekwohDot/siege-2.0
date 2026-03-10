@@ -1,12 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import * as queries from "@/lib/queries";
 import type { UpdateUserProfile } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  subscribeToPush,
+  unsubscribeFromPush,
+  getCurrentSubscription,
+  getNotificationPermission,
+} from "@/lib/push";
 
 // ============================================================
 // Settings — Profile & preferences
@@ -121,6 +127,47 @@ export default function SettingsPage() {
     value: UpdateUserProfile[K]
   ) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  // ---------- Notification state ----------
+  const [notifEnabled, setNotifEnabled] = useState(false);
+  const [notifPermission, setNotifPermission] = useState<
+    NotificationPermission | "unsupported" | "loading"
+  >("loading");
+  const [notifLoading, setNotifLoading] = useState(false);
+
+  const checkNotifState = useCallback(async () => {
+    const perm = getNotificationPermission();
+    setNotifPermission(perm);
+
+    if (perm === "granted") {
+      const sub = await getCurrentSubscription();
+      setNotifEnabled(!!sub);
+    } else {
+      setNotifEnabled(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkNotifState();
+  }, [checkNotifState]);
+
+  const handleNotifToggle = async (enable: boolean) => {
+    setNotifLoading(true);
+    try {
+      if (enable) {
+        const sub = await subscribeToPush();
+        setNotifEnabled(!!sub);
+      } else {
+        await unsubscribeFromPush();
+        setNotifEnabled(false);
+      }
+      await checkNotifState();
+    } catch (err) {
+      console.error("Notification toggle error:", err);
+    } finally {
+      setNotifLoading(false);
+    }
   };
 
   // ---------- Loading skeleton ----------
@@ -239,6 +286,49 @@ export default function SettingsPage() {
               onChange={(v) => updateField("has_asthma", v)}
             />
           </FormRow>
+        </div>
+      </section>
+
+      {/* ---------- Notifications ---------- */}
+      <section className="glass-card p-5">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1">
+          Notifications
+        </h3>
+        <div>
+          <FormRow label="Enable Notifications">
+            {notifPermission === "loading" ? (
+              <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                Loading...
+              </span>
+            ) : notifPermission === "unsupported" ? (
+              <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                Not supported
+              </span>
+            ) : (
+              <div className="flex items-center gap-2">
+                {notifLoading ? (
+                  <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                    ...
+                  </span>
+                ) : (
+                  <Toggle
+                    checked={notifEnabled}
+                    onChange={handleNotifToggle}
+                  />
+                )}
+              </div>
+            )}
+          </FormRow>
+          {notifPermission === "denied" && (
+            <p className="text-xs text-[hsl(var(--destructive))] mt-2 px-1">
+              Notifications blocked. Enable in your browser settings.
+            </p>
+          )}
+          {notifPermission === "granted" && notifEnabled && (
+            <p className="text-xs text-[hsl(var(--chart-3))] mt-2 px-1">
+              You will receive reminders for weigh-ins, meals, water, and workouts.
+            </p>
+          )}
         </div>
       </section>
 

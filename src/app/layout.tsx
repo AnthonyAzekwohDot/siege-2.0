@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { Header } from "@/components/shared/header";
 import { BottomNav } from "@/components/shared/bottom-nav";
+import { ServiceWorkerRegister } from "@/components/shared/sw-register";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -37,6 +38,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
         <Providers>
+          <ServiceWorkerRegister />
           <Header />
           <main className="pt-14 pb-24">{children}</main>
           <BottomNav />
