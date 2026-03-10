@@ -278,6 +278,44 @@ export default function SchedulePage() {
     },
   });
 
+  const toggleMorningWalkMutation = useMutation<DailyLog, Error, void, { previous?: DailyLog }>({
+    mutationFn: () => queries.toggleMorningWalk(dateKey),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["daily-log", dateKey] });
+      const previous = queryClient.getQueryData<DailyLog>(["daily-log", dateKey]);
+      if (previous) {
+        queryClient.setQueryData(["daily-log", dateKey], {
+          ...previous,
+          morning_walk_completed: !previous.morning_walk_completed,
+        });
+      }
+      return { previous };
+    },
+    onError: (_err, _arg, context) => {
+      if (context?.previous) queryClient.setQueryData(["daily-log", dateKey], context.previous);
+    },
+    onSuccess: (data) => { queryClient.setQueryData(["daily-log", dateKey], data); },
+  });
+
+  const toggleEveningWalkMutation = useMutation<DailyLog, Error, void, { previous?: DailyLog }>({
+    mutationFn: () => queries.toggleEveningWalk(dateKey),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["daily-log", dateKey] });
+      const previous = queryClient.getQueryData<DailyLog>(["daily-log", dateKey]);
+      if (previous) {
+        queryClient.setQueryData(["daily-log", dateKey], {
+          ...previous,
+          evening_walk_completed: !previous.evening_walk_completed,
+        });
+      }
+      return { previous };
+    },
+    onError: (_err, _arg, context) => {
+      if (context?.previous) queryClient.setQueryData(["daily-log", dateKey], context.previous);
+    },
+    onSuccess: (data) => { queryClient.setQueryData(["daily-log", dateKey], data); },
+  });
+
   const toggleExerciseMutation = useMutation<DailyLog, Error, string, { previous?: DailyLog }>({
     mutationFn: (exerciseName) => queries.toggleExercise(dateKey, exerciseName),
     onMutate: async (exerciseName) => {
@@ -395,8 +433,11 @@ export default function SchedulePage() {
           </h3>
 
           {schedule.morningWalk && (
-            <div className="glass-card p-4 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-[hsl(var(--chart-4))/0.15] flex items-center justify-center">
+            <button
+              onClick={() => toggleMorningWalkMutation.mutate()}
+              className="glass-card p-4 flex items-center gap-3 w-full text-left active:scale-[0.98] transition-transform"
+            >
+              <div className="w-9 h-9 rounded-lg bg-[hsl(var(--chart-4))]/15 flex items-center justify-center">
                 <Footprints className="w-4 h-4 text-[hsl(var(--chart-4))]" />
               </div>
               <div className="flex-1">
@@ -407,31 +448,28 @@ export default function SchedulePage() {
                   ~400 cal burn
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
-                <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                  30-45 min
-                </span>
-              </div>
               <div
-                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
                   dailyLog.morning_walk_completed
-                    ? "bg-[hsl(var(--chart-3))] border-[hsl(var(--chart-3))]"
-                    : "border-[hsl(var(--input))]"
+                    ? "bg-[hsl(var(--chart-3))]"
+                    : "bg-[rgba(0,0,0,0.06)]"
                 }`}
               >
                 {dailyLog.morning_walk_completed && (
-                  <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                  <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 12 12" fill="none">
                     <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 )}
               </div>
-            </div>
+            </button>
           )}
 
           {schedule.eveningWalk && (
-            <div className="glass-card p-4 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-[hsl(var(--chart-5))/0.15] flex items-center justify-center">
+            <button
+              onClick={() => toggleEveningWalkMutation.mutate()}
+              className="glass-card p-4 flex items-center gap-3 w-full text-left active:scale-[0.98] transition-transform"
+            >
+              <div className="w-9 h-9 rounded-lg bg-[hsl(var(--chart-5))]/15 flex items-center justify-center">
                 <Footprints className="w-4 h-4 text-[hsl(var(--chart-5))]" />
               </div>
               <div className="flex-1">
@@ -442,26 +480,20 @@ export default function SchedulePage() {
                   ~150 cal burn
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
-                <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                  15-20 min
-                </span>
-              </div>
               <div
-                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
                   dailyLog.evening_walk_completed
-                    ? "bg-[hsl(var(--chart-3))] border-[hsl(var(--chart-3))]"
-                    : "border-[hsl(var(--input))]"
+                    ? "bg-[hsl(var(--chart-3))]"
+                    : "bg-[rgba(0,0,0,0.06)]"
                 }`}
               >
                 {dailyLog.evening_walk_completed && (
-                  <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                  <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 12 12" fill="none">
                     <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 )}
               </div>
-            </div>
+            </button>
           )}
         </div>
       )}

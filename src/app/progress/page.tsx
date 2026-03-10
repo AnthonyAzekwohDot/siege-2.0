@@ -54,7 +54,9 @@ function computeMonthStats(logs: DailyLog[], year: number, month: number): Month
       l.morning_walk_completed ||
       l.evening_walk_completed
   ).length;
-  const daysTracked = monthLogs.length;
+  const daysTracked = monthLogs.filter(
+    (l) => l.steps > 0 || l.meals.length > 0 || l.completed_exercises.length > 0 || l.morning_walk_completed || l.evening_walk_completed || l.water_bottles > 0
+  ).length;
 
   return {
     totalSteps,
@@ -68,6 +70,10 @@ function computeMonthStats(logs: DailyLog[], year: number, month: number): Month
 }
 
 function getActivityLevel(log: DailyLog): number {
+  // Only show activity for days where user actually did something
+  const hasActivity = log.steps > 0 || log.meals.length > 0 || log.completed_exercises.length > 0 || log.morning_walk_completed || log.evening_walk_completed || log.water_bottles > 0;
+  if (!hasActivity) return 0;
+
   let score = 0;
   if (log.steps >= 10000) score += 2;
   else if (log.steps >= 5000) score += 1;

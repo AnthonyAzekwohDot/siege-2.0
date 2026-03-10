@@ -13,7 +13,7 @@
   --background: 0 0% 98%;
   --foreground: 0 0% 0%;
 
-  --primary: 0 78% 55%;
+  --primary: 225 80% 56%;
   --primary-foreground: 0 0% 100%;
 
   --secondary: 0 0% 94%;
@@ -30,7 +30,7 @@
 
   --border: 0 0% 90%;
   --input: 0 0% 85%;
-  --ring: 0 78% 55%;
+  --ring: 225 80% 56%;
 
   --radius: 1rem;
 
@@ -38,12 +38,12 @@
   --card: 0 0% 100%;
   --card-foreground: 0 0% 0%;
 
-  /* Charts — Apple-style vivid */
-  --chart-1: 0 78% 55%;
-  --chart-2: 210 100% 50%;
-  --chart-3: 152 60% 44%;
-  --chart-4: 36 100% 50%;
-  --chart-5: 280 80% 55%;
+  /* Section accent colours */
+  --chart-1: 225 80% 56%;  /* Primary blue — home/general */
+  --chart-2: 14 90% 55%;   /* Workout — warm orange */
+  --chart-3: 152 60% 44%;  /* Nutrition — green */
+  --chart-4: 36 95% 55%;   /* Steps/walks — amber */
+  --chart-5: 270 70% 58%;  /* Mind — purple */
 
   /* Glass surfaces */
   --glass-light: rgba(255, 255, 255, 0.72);
