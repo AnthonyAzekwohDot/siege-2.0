@@ -49,6 +49,7 @@ export interface DailyLog {
   evening_walk_completed: boolean;
   water_bottles: number;
   water_goal: number;
+  weight_kg?: number;
 }
 
 // ============ MIND TYPES ============

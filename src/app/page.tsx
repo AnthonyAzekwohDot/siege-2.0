@@ -12,6 +12,7 @@ import { StepRing } from "@/components/dashboard/step-ring";
 import { CalorieBar } from "@/components/dashboard/calorie-bar";
 import { WorkoutCard } from "@/components/dashboard/workout-card";
 import { MealForm } from "@/components/dashboard/meal-form";
+import { FoodSearch } from "@/components/dashboard/food-search";
 import { StepInput } from "@/components/dashboard/step-input";
 import { DailyScore } from "@/components/dashboard/daily-score";
 import { InsightCard } from "@/components/dashboard/insight-card";
@@ -35,6 +36,7 @@ export default function DashboardPage() {
   const [cameraOpen, setCameraOpen] = useState(false);
   const [reviewData, setReviewData] = useState<PhotoAnalysis | null>(null);
   const [manualFormOpen, setManualFormOpen] = useState(false);
+  const [foodSearchOpen, setFoodSearchOpen] = useState(false);
   const [stepInputOpen, setStepInputOpen] = useState(false);
 
   // ---------- Queries ----------
@@ -517,10 +519,10 @@ export default function DashboardPage() {
             Photo Log
           </button>
           <button
-            onClick={() => setManualFormOpen(true)}
+            onClick={() => setFoodSearchOpen(true)}
             className="flex-1 py-3 rounded-xl text-sm font-semibold border border-[rgba(0,0,0,0.08)] bg-white/60 text-[hsl(var(--foreground))] active:scale-[0.97] active:bg-[rgba(0,0,0,0.04)] transition-all"
           >
-            Manual Log
+            Log Food
           </button>
         </div>
       </section>
@@ -551,6 +553,18 @@ export default function DashboardPage() {
           setReviewData(null);
           setCameraOpen(true);
         }}
+      />
+
+      {/* ---------- Food Search ---------- */}
+      <FoodSearch
+        open={foodSearchOpen}
+        onOpenChange={setFoodSearchOpen}
+        onSubmit={(meal) => {
+          addMealMutation.mutate(meal);
+          setFoodSearchOpen(false);
+        }}
+        onCustomMeal={() => setManualFormOpen(true)}
+        recentMeals={dailyLog.meals.map((m) => ({ name: m.name, calories: m.calories }))}
       />
 
       {/* ---------- Manual Meal Form ---------- */}

@@ -602,6 +602,38 @@ export async function syncStepsExertion(date: string, steps: number): Promise<vo
   if (error) throw error;
 }
 
+// ============ WEIGHT TRACKING ============
+
+export async function logWeight(date: string, weightKg: number): Promise<DailyLog> {
+  await getOrCreateDailyLog(date);
+
+  const { data, error } = await supabase
+    .from("daily_logs")
+    .update({ weight_kg: weightKg })
+    .eq("date", date)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as DailyLog;
+}
+
+export async function getWeightHistory(days: number): Promise<{ date: string; weight_kg: number }[]> {
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+  const startDateStr = startDate.toISOString().split("T")[0];
+
+  const { data, error } = await supabase
+    .from("daily_logs")
+    .select("date, weight_kg")
+    .gte("date", startDateStr)
+    .not("weight_kg", "is", null)
+    .order("date", { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []) as { date: string; weight_kg: number }[];
+}
+
 export async function getDailyLogsHistory(days: number): Promise<DailyLog[]> {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameMonth } from "date-fns";
 
 import * as queries from "@/lib/queries";
@@ -16,6 +16,11 @@ import {
   TrendingUp,
   Calendar,
   Target,
+  Scale,
+  Minus,
+  Plus,
+  Check,
+  X,
 } from "lucide-react";
 
 // ============================================================
@@ -212,6 +217,238 @@ function CalendarGrid({
   );
 }
 
+// ---------- Weight Chart (SVG) ----------
+
+function WeightChart({ data }: { data: { date: string; weight_kg: number }[] }) {
+  if (data.length < 2) {
+    return (
+      <div className="h-[120px] flex items-center justify-center text-xs text-[hsl(var(--muted-foreground))]">
+        Log at least 2 weights to see the chart
+      </div>
+    );
+  }
+
+  const weights = data.map((d) => d.weight_kg);
+  const minW = Math.min(...weights);
+  const maxW = Math.max(...weights);
+  const range = maxW - minW || 1;
+
+  const padding = { top: 16, bottom: 24, left: 0, right: 0 };
+  const chartH = 120;
+  const chartW = 100; // percentage-based, we use viewBox
+
+  const innerW = chartW - padding.left - padding.right;
+  const innerH = chartH - padding.top - padding.bottom;
+
+  const points = data.map((d, i) => {
+    const x = padding.left + (i / (data.length - 1)) * innerW;
+    const y = padding.top + innerH - ((d.weight_kg - minW) / range) * innerH;
+    return { x, y, ...d };
+  });
+
+  const polylinePoints = points.map((p) => `${p.x},${p.y}`).join(" ");
+
+  const isDownTrend = weights[weights.length - 1] <= weights[0];
+  const strokeColor = isDownTrend ? "hsl(var(--chart-3))" : "hsl(var(--destructive))";
+
+  return (
+    <svg
+      viewBox={`0 0 ${chartW} ${chartH}`}
+      className="w-full"
+      style={{ height: "120px" }}
+      preserveAspectRatio="none"
+    >
+      {/* Grid lines */}
+      {[0, 0.25, 0.5, 0.75, 1].map((frac) => {
+        const y = padding.top + innerH - frac * innerH;
+        return (
+          <line
+            key={frac}
+            x1={padding.left}
+            y1={y}
+            x2={chartW - padding.right}
+            y2={y}
+            stroke="hsl(var(--border))"
+            strokeWidth="0.3"
+          />
+        );
+      })}
+
+      {/* Line */}
+      <polyline
+        points={polylinePoints}
+        fill="none"
+        stroke={strokeColor}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
+
+      {/* Dots */}
+      {points.map((p, i) => (
+        <circle
+          key={i}
+          cx={p.x}
+          cy={p.y}
+          r="1.5"
+          fill={strokeColor}
+          vectorEffect="non-scaling-stroke"
+        />
+      ))}
+
+      {/* Min/Max labels */}
+      <text
+        x={padding.left + 1}
+        y={padding.top - 4}
+        fontSize="5"
+        fill="hsl(var(--muted-foreground))"
+        dominantBaseline="auto"
+      >
+        {maxW.toFixed(1)}
+      </text>
+      <text
+        x={padding.left + 1}
+        y={padding.top + innerH + 10}
+        fontSize="5"
+        fill="hsl(var(--muted-foreground))"
+        dominantBaseline="auto"
+      >
+        {minW.toFixed(1)}
+      </text>
+    </svg>
+  );
+}
+
+// ---------- Weight Card ----------
+
+function WeightCard() {
+  const queryClient = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
+  const [weightInput, setWeightInput] = useState(151);
+
+  const today = format(new Date(), "yyyy-MM-dd");
+
+  const { data: weightHistory } = useQuery({
+    queryKey: ["weight-history"],
+    queryFn: () => queries.getWeightHistory(30),
+  });
+
+  const mutation = useMutation({
+    mutationFn: () => queries.logWeight(today, weightInput),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["weight-history"] });
+      queryClient.invalidateQueries({ queryKey: ["all-logs"] });
+      setShowForm(false);
+    },
+  });
+
+  const currentWeight = weightHistory && weightHistory.length > 0
+    ? weightHistory[weightHistory.length - 1].weight_kg
+    : null;
+
+  const firstWeight = weightHistory && weightHistory.length > 0
+    ? weightHistory[0].weight_kg
+    : null;
+
+  const weightChange = currentWeight !== null && firstWeight !== null
+    ? currentWeight - firstWeight
+    : null;
+
+  return (
+    <section className="glass-card p-5">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: "hsl(var(--chart-1) / 0.15)" }}
+          >
+            <Scale className="w-4 h-4" style={{ color: "hsl(var(--chart-1))" }} />
+          </div>
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+            Weight
+          </h3>
+        </div>
+        <button
+          onClick={() => {
+            if (currentWeight) setWeightInput(currentWeight);
+            setShowForm(!showForm);
+          }}
+          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity"
+        >
+          Log Weight
+        </button>
+      </div>
+
+      {/* Current weight display */}
+      <div className="flex items-baseline gap-3 mb-3">
+        <p className="text-3xl font-bold text-[hsl(var(--foreground))]">
+          {currentWeight !== null ? `${currentWeight.toFixed(1)}` : "--"}
+          <span className="text-base font-normal text-[hsl(var(--muted-foreground))] ml-1">kg</span>
+        </p>
+        {weightChange !== null && weightHistory && weightHistory.length > 1 && (
+          <span
+            className="text-sm font-semibold"
+            style={{
+              color: weightChange <= 0
+                ? "hsl(var(--chart-3))"
+                : "hsl(var(--destructive))",
+            }}
+          >
+            {weightChange <= 0 ? "" : "+"}{weightChange.toFixed(1)} kg
+          </span>
+        )}
+      </div>
+
+      {/* Inline form */}
+      {showForm && (
+        <div className="flex items-center gap-2 mb-4 p-3 rounded-lg bg-[hsl(var(--muted))]">
+          <button
+            onClick={() => setWeightInput((v) => Math.round((v - 0.1) * 10) / 10)}
+            className="w-9 h-9 rounded-lg bg-[hsl(var(--background))] flex items-center justify-center text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] transition-colors"
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+          <span className="text-lg font-bold text-[hsl(var(--foreground))] min-w-[80px] text-center tabular-nums">
+            {weightInput.toFixed(1)} kg
+          </span>
+          <button
+            onClick={() => setWeightInput((v) => Math.round((v + 0.1) * 10) / 10)}
+            className="w-9 h-9 rounded-lg bg-[hsl(var(--background))] flex items-center justify-center text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => mutation.mutate()}
+            disabled={mutation.isPending}
+            className="w-9 h-9 rounded-lg bg-[hsl(var(--chart-3))] flex items-center justify-center text-white hover:opacity-90 transition-opacity ml-auto"
+          >
+            <Check className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setShowForm(false)}
+            className="w-9 h-9 rounded-lg bg-[hsl(var(--background))] flex items-center justify-center text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Chart */}
+      {weightHistory && weightHistory.length > 0 && (
+        <WeightChart data={weightHistory} />
+      )}
+
+      {/* Empty state */}
+      {(!weightHistory || weightHistory.length === 0) && !showForm && (
+        <p className="text-xs text-[hsl(var(--muted-foreground))]">
+          No weight data yet. Tap "Log Weight" to start tracking.
+        </p>
+      )}
+    </section>
+  );
+}
+
 // ---------- Main Page ----------
 
 export default function ProgressPage() {
@@ -327,6 +564,9 @@ export default function ProgressPage() {
           Historical analytics
         </p>
       </div>
+
+      {/* ---------- Weight Tracking ---------- */}
+      <WeightCard />
 
       {/* ---------- Month Selector ---------- */}
       <div className="glass-card p-4 flex items-center justify-between">

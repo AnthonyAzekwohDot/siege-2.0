@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS mind_logs (
 -- User profile for TDEE calculations
 CREATE TABLE IF NOT EXISTS user_profiles (
   id TEXT PRIMARY KEY DEFAULT 'default-user',
-  weight_kg INTEGER NOT NULL DEFAULT 130,
+  weight_kg INTEGER NOT NULL DEFAULT 151,
   height_cm INTEGER NOT NULL DEFAULT 183,
   age INTEGER NOT NULL DEFAULT 25,
   sex TEXT NOT NULL DEFAULT 'male',
@@ -74,3 +74,6 @@ CREATE POLICY "Allow all for daily_logs" ON daily_logs FOR ALL USING (true) WITH
 CREATE POLICY "Allow all for mind_logs" ON mind_logs FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all for user_profiles" ON user_profiles FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all for daily_nutrition_summaries" ON daily_nutrition_summaries FOR ALL USING (true) WITH CHECK (true);
+
+-- Add weight tracking to daily logs
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS weight_kg REAL;

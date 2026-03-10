@@ -30,6 +30,7 @@ import {
 
 import { FoodCamera } from "@/components/dashboard/food-camera";
 import { FoodReviewSheet } from "@/components/dashboard/food-review-sheet";
+import { FoodSearch } from "@/components/dashboard/food-search";
 import { MealForm } from "@/components/dashboard/meal-form";
 
 // ============================================================
@@ -46,6 +47,7 @@ export default function NutritionPage() {
   const [analysisStage, setAnalysisStage] = useState("");
   const [reviewData, setReviewData] = useState<PhotoAnalysis | null>(null);
   const [manualFormOpen, setManualFormOpen] = useState(false);
+  const [foodSearchOpen, setFoodSearchOpen] = useState(false);
 
   // ---------- Queries ----------
   const { data: dailyLog, isLoading: logLoading } = useQuery({
@@ -485,11 +487,11 @@ export default function NutritionPage() {
           Photo Log
         </button>
         <button
-          onClick={() => setManualFormOpen(true)}
+          onClick={() => setFoodSearchOpen(true)}
           className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium border border-[hsl(var(--border))] text-[hsl(var(--foreground))] transition-colors hover:bg-[hsl(var(--accent))]"
         >
           <PenLine className="w-4 h-4" />
-          Manual Log
+          Log Food
         </button>
       </div>
 
@@ -554,6 +556,17 @@ export default function NutritionPage() {
           setReviewData(null);
           setCameraOpen(true);
         }}
+      />
+
+      <FoodSearch
+        open={foodSearchOpen}
+        onOpenChange={setFoodSearchOpen}
+        onSubmit={(meal) => {
+          addMealMutation.mutate(meal);
+          setFoodSearchOpen(false);
+        }}
+        onCustomMeal={() => setManualFormOpen(true)}
+        recentMeals={dailyLog.meals.map((m) => ({ name: m.name, calories: m.calories }))}
       />
 
       <MealForm
