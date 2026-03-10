@@ -379,15 +379,10 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-2xl mx-auto p-4 pb-12 space-y-4">
-      {/* ---------- Date Header ---------- */}
-      <div>
-        <h2 className="text-2xl font-bold text-[hsl(var(--foreground))]">
-          {dayName}
-        </h2>
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
-          {fullDate}
-        </p>
-      </div>
+      {/* ---------- Date ---------- */}
+      <p className="text-sm font-medium text-[hsl(var(--muted-foreground))]">
+        {dayName}, {fullDate}
+      </p>
 
       {/* ---------- Daily Score ---------- */}
       <DailyScore log={dailyLog} date={today} />
@@ -410,42 +405,41 @@ export default function DashboardPage() {
       )}
 
       {/* ---------- Steps Card ---------- */}
-      <section className="glass-card p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
-            Steps
-          </h3>
-          <button
-            onClick={() => setStepInputOpen(true)}
-            className="text-xs font-medium text-[hsl(var(--primary))] hover:underline"
-          >
-            Update
-          </button>
-        </div>
-        <div className="flex items-center gap-6">
-          <StepRing
-            current={dailyLog.steps}
-            goal={dailyLog.steps_goal}
-          />
-          <div>
-            <p className="text-3xl font-bold text-[hsl(var(--foreground))]">
-              {dailyLog.steps.toLocaleString()}
-            </p>
-            <p className="text-sm text-[hsl(var(--muted-foreground))]">
-              of {dailyLog.steps_goal.toLocaleString()} goal
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ---------- Step Input Modal ---------- */}
-      {stepInputOpen && (
+      {stepInputOpen ? (
         <StepInput
           currentSteps={dailyLog.steps}
           onSubmit={handleStepSubmit}
           onCancel={() => setStepInputOpen(false)}
           isPending={updateStepsMutation.isPending}
         />
+      ) : (
+        <button
+          onClick={() => setStepInputOpen(true)}
+          className="glass-card p-5 w-full text-left"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+              Steps
+            </h3>
+            <span className="text-xs font-medium text-[hsl(var(--primary))]">
+              Tap to update
+            </span>
+          </div>
+          <div className="flex items-center gap-5">
+            <StepRing
+              current={dailyLog.steps}
+              goal={dailyLog.steps_goal}
+            />
+            <div>
+              <p className="text-3xl font-bold text-[hsl(var(--foreground))]">
+                {dailyLog.steps.toLocaleString()}
+              </p>
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                of {dailyLog.steps_goal.toLocaleString()} goal
+              </p>
+            </div>
+          </div>
+        </button>
       )}
 
       {/* ---------- Nutrition Card ---------- */}
@@ -466,25 +460,27 @@ export default function DashboardPage() {
         />
 
         {/* Fruit checkbox */}
-        <div className="flex items-center gap-3 mt-4">
-          <button
-            onClick={() => toggleFruitMutation.mutate()}
-            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+        <button
+          onClick={() => toggleFruitMutation.mutate()}
+          className="flex items-center gap-3 mt-4 py-2 w-full active:opacity-70 transition-opacity"
+        >
+          <div
+            className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
               dailyLog.fruit_eaten
-                ? "bg-[hsl(var(--primary))] border-[hsl(var(--primary))]"
-                : "border-[hsl(var(--input))]"
+                ? "bg-[hsl(var(--chart-3))]"
+                : "bg-[rgba(0,0,0,0.06)]"
             }`}
           >
             {dailyLog.fruit_eaten && (
-              <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+              <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 12 12" fill="none">
                 <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             )}
-          </button>
-          <span className="text-sm text-[hsl(var(--foreground))]">
+          </div>
+          <span className="text-sm font-medium text-[hsl(var(--foreground))]">
             Fruit eaten today
           </span>
-        </div>
+        </button>
 
         {/* Meals list */}
         {dailyLog.meals.length > 0 && (
@@ -516,13 +512,13 @@ export default function DashboardPage() {
         <div className="flex gap-2 mt-4">
           <button
             onClick={() => setCameraOpen(true)}
-            className="flex-1 py-2.5 rounded-lg text-sm font-medium bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] transition-colors hover:opacity-90"
+            className="flex-1 py-3 rounded-xl text-sm font-semibold bg-[hsl(var(--primary))] text-white active:scale-[0.97] transition-transform"
           >
             Photo Log
           </button>
           <button
             onClick={() => setManualFormOpen(true)}
-            className="flex-1 py-2.5 rounded-lg text-sm font-medium border border-[hsl(var(--border))] text-[hsl(var(--foreground))] transition-colors hover:bg-[hsl(var(--accent))]"
+            className="flex-1 py-3 rounded-xl text-sm font-semibold border border-[rgba(0,0,0,0.08)] bg-white/60 text-[hsl(var(--foreground))] active:scale-[0.97] active:bg-[rgba(0,0,0,0.04)] transition-all"
           >
             Manual Log
           </button>

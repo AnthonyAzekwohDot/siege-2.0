@@ -1,110 +1,59 @@
 @import "tailwindcss";
 
 /* ============================================================
-   Siege 2.0 — Liquid Glass Design System
+   Siege 2.0 — iOS Liquid Glass Design System
+   Inspired by Apple Music / iOS 26
    ============================================================ */
 
 :root {
-  /* Glass */
-  --glass-bg: rgba(255, 255, 255, 0.6);
-  --glass-bg-elevated: rgba(255, 255, 255, 0.8);
-  --glass-border: rgba(255, 255, 255, 0.4);
-  --glass-highlight: rgba(255, 255, 255, 0.5);
-  --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
-  --glass-blur: 16px;
-
-  /* Gradient background */
-  --gradient-start: 220 90% 96%;
-  --gradient-mid: 250 85% 95%;
-  --gradient-end: 200 80% 94%;
+  /* Background */
+  --bg: 0 0% 98%;
 
   /* Semantic colours */
-  --background: 220 30% 97%;
-  --foreground: 220 10% 12%;
+  --background: 0 0% 98%;
+  --foreground: 0 0% 0%;
 
-  --primary: 220 85% 50%;
+  --primary: 0 78% 55%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 220 15% 88%;
-  --secondary-foreground: 220 10% 12%;
+  --secondary: 0 0% 94%;
+  --secondary-foreground: 0 0% 0%;
 
-  --muted: 220 15% 92%;
-  --muted-foreground: 220 10% 40%;
+  --muted: 0 0% 94.5%;
+  --muted-foreground: 0 0% 40%;
 
-  --accent: 220 20% 94%;
-  --accent-foreground: 220 10% 12%;
+  --accent: 0 0% 95%;
+  --accent-foreground: 0 0% 0%;
 
-  --destructive: 0 75% 45%;
+  --destructive: 0 72% 48%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 220 20% 90%;
-  --input: 220 15% 80%;
-  --ring: 220 85% 50%;
+  --border: 0 0% 90%;
+  --input: 0 0% 85%;
+  --ring: 0 78% 55%;
 
-  --radius: 0.75rem;
+  --radius: 1rem;
 
   /* Card */
   --card: 0 0% 100%;
-  --card-foreground: 220 10% 12%;
+  --card-foreground: 0 0% 0%;
 
-  /* Charts */
-  --chart-1: 220 80% 55%;
-  --chart-2: 180 65% 45%;
-  --chart-3: 145 60% 42%;
-  --chart-4: 30 80% 55%;
-  --chart-5: 280 65% 55%;
+  /* Charts — Apple-style vivid */
+  --chart-1: 0 78% 55%;
+  --chart-2: 210 100% 50%;
+  --chart-3: 152 60% 44%;
+  --chart-4: 36 100% 50%;
+  --chart-5: 280 80% 55%;
+
+  /* Glass surfaces */
+  --glass-light: rgba(255, 255, 255, 0.72);
+  --glass-light-border: rgba(0, 0, 0, 0.06);
+  --glass-dark: rgba(30, 30, 30, 0.65);
+  --glass-dark-elevated: rgba(20, 20, 20, 0.75);
+  --glass-dark-border: rgba(255, 255, 255, 0.08);
 
   /* Font */
-  --font-sans: "SF Pro Display", -apple-system, "Inter", system-ui, sans-serif;
-}
-
-.dark {
-  /* Glass */
-  --glass-bg: rgba(15, 20, 30, 0.7);
-  --glass-bg-elevated: rgba(25, 30, 45, 0.8);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-highlight: rgba(255, 255, 255, 0.15);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  --glass-blur: 20px;
-
-  /* Gradient background */
-  --gradient-start: 230 25% 12%;
-  --gradient-mid: 250 30% 15%;
-  --gradient-end: 220 25% 10%;
-
-  /* Semantic colours */
-  --background: 230 20% 8%;
-  --foreground: 220 15% 95%;
-
-  --primary: 220 80% 55%;
-  --primary-foreground: 0 0% 100%;
-
-  --secondary: 230 15% 20%;
-  --secondary-foreground: 220 15% 95%;
-
-  --muted: 230 15% 18%;
-  --muted-foreground: 220 10% 60%;
-
-  --accent: 230 20% 22%;
-  --accent-foreground: 220 15% 95%;
-
-  --destructive: 0 70% 50%;
-  --destructive-foreground: 0 0% 100%;
-
-  --border: 230 15% 22%;
-  --input: 230 15% 28%;
-  --ring: 220 80% 55%;
-
-  /* Card */
-  --card: 230 20% 12%;
-  --card-foreground: 220 15% 95%;
-
-  /* Charts */
-  --chart-1: 220 75% 60%;
-  --chart-2: 180 60% 50%;
-  --chart-3: 145 55% 48%;
-  --chart-4: 30 75% 60%;
-  --chart-5: 280 60% 60%;
+  --font-sans: -apple-system, "SF Pro Display", "Inter", system-ui, sans-serif;
 }
 
 /* ============================================================
@@ -113,14 +62,8 @@
 
 @layer base {
   body {
-    background: linear-gradient(
-      135deg,
-      hsl(var(--gradient-start)),
-      hsl(var(--gradient-mid)),
-      hsl(var(--gradient-end))
-    );
-    background-attachment: fixed;
-    min-height: 100vh;
+    background-color: hsl(var(--bg));
+    min-height: 100dvh;
     font-family: var(--font-sans);
     color: hsl(var(--foreground));
     -webkit-font-smoothing: antialiased;
@@ -130,53 +73,80 @@
   * {
     border-color: hsl(var(--border));
   }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 /* ============================================================
-   Component Layer — Glass
+   Component Layer — Liquid Glass
    ============================================================ */
 
 @layer components {
-  .glass {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
-  }
-
+  /* Light glass surface — cards, dialogs */
   .glass-card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
+    background: var(--glass-light);
+    backdrop-filter: blur(40px) saturate(1.8);
+    -webkit-backdrop-filter: blur(40px) saturate(1.8);
+    border: 0.5px solid var(--glass-light-border);
     border-radius: var(--radius);
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    box-shadow:
+      0 0.5px 0 0 rgba(255, 255, 255, 0.7) inset,
+      0 1px 3px rgba(0, 0, 0, 0.04),
+      0 4px 12px rgba(0, 0, 0, 0.03);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
 
   .glass-card:hover {
-    box-shadow: 0 12px 40px rgba(31, 38, 135, 0.22);
+    box-shadow:
+      0 0.5px 0 0 rgba(255, 255, 255, 0.7) inset,
+      0 2px 8px rgba(0, 0, 0, 0.06),
+      0 8px 24px rgba(0, 0, 0, 0.05);
   }
 
-  .dark .glass-card:hover {
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
-  }
-
+  /* Header — clean, translucent white */
   .glass-header {
-    background: var(--glass-bg-elevated);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border-bottom: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
+    background: rgba(248, 248, 248, 0.8);
+    backdrop-filter: blur(40px) saturate(1.8);
+    -webkit-backdrop-filter: blur(40px) saturate(1.8);
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
   }
 
+  /* Bottom nav — dark frosted glass like Apple Music */
   .glass-nav {
-    background: var(--glass-bg-elevated);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border-top: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
+    background: var(--glass-dark);
+    backdrop-filter: blur(50px) saturate(2);
+    -webkit-backdrop-filter: blur(50px) saturate(2);
+    border-top: 0.5px solid var(--glass-dark-border);
+    border-radius: 20px 20px 0 0;
+    box-shadow:
+      0 -1px 0 0 rgba(255, 255, 255, 0.05) inset,
+      0 -4px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Dialogs — heavier glass */
+  .glass-dialog {
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(50px) saturate(2);
+    -webkit-backdrop-filter: blur(50px) saturate(2);
+    border: 0.5px solid rgba(255, 255, 255, 0.5);
+    border-radius: 20px;
+    box-shadow:
+      0 0.5px 0 0 rgba(255, 255, 255, 0.8) inset,
+      0 24px 80px rgba(0, 0, 0, 0.12),
+      0 8px 24px rgba(0, 0, 0, 0.08);
+  }
+
+  /* List rows with thin separators (Apple Music style) */
+  .list-row {
+    padding: 12px 0;
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .list-row:last-child {
+    border-bottom: none;
   }
 }
 
@@ -190,20 +160,45 @@
   }
 }
 
-/* Touch feedback for mobile */
+/* ============================================================
+   Animations
+   ============================================================ */
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Glass shimmer skeleton */
+.animate-pulse {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.04) 0%,
+    rgba(0, 0, 0, 0.08) 50%,
+    rgba(0, 0, 0, 0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* ============================================================
+   Touch & Motion
+   ============================================================ */
+
 @media (hover: none) {
   .glass-card:active {
     transform: scale(0.98);
-    opacity: 0.9;
+    transition: transform 0.1s ease;
   }
 
   button:active,
   a:active {
-    opacity: 0.8;
+    opacity: 0.7;
+    transition: opacity 0.08s ease;
   }
 }
 
-/* Reduce motion support */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -212,5 +207,32 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================
+   Scrollbar — invisible on mobile, thin on desktop
+   ============================================================ */
+
+::-webkit-scrollbar {
+  width: 0px;
+}
+
+@media (hover: hover) {
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.15);
   }
 }
