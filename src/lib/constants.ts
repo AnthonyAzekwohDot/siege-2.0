@@ -389,7 +389,8 @@ export const MIND_SCHEDULE: MindDayPlan[] = [
   {
     dayOfWeek: "monday",
     blocks: [
-      { id: "mon-1", title: "Reading", category: "reading", plannedMinutes: 60 },
+      { id: "mon-1", title: "Daily Planning", category: "documentation", plannedMinutes: 15, description: "Plan the day. What fundamentals are you targeting? What does a win look like today?" },
+      { id: "mon-1b", title: "Reading", category: "reading", plannedMinutes: 60 },
       { id: "mon-2", title: "Master Study", category: "master-study", plannedMinutes: 60, description: "Pick one master. Copy a section. Understand WHY it works, not just WHAT it looks like.", focusOptions: ["composition", "values", "colour-theory", "proportion-placement", "form-construction"] },
       { id: "mon-3", title: "Memory Loop", category: "drawing", plannedMinutes: 60, description: "Draw from memory. No reference. If you can't draw it from memory, you don't know it yet.", focusOptions: ["proportion-placement", "form-construction", "anatomy", "gesture", "perspective"] },
       { id: "mon-4", title: "Painting Structure", category: "painting", plannedMinutes: 150, description: "Block in painting. Values first, then colour. Composition locked before any detail.", focusOptions: ["composition", "values", "colour-theory"] },
@@ -399,7 +400,8 @@ export const MIND_SCHEDULE: MindDayPlan[] = [
   {
     dayOfWeek: "tuesday",
     blocks: [
-      { id: "tue-1", title: "Reading", category: "reading", plannedMinutes: 60 },
+      { id: "tue-1", title: "Daily Planning", category: "documentation", plannedMinutes: 15, description: "Plan the day. What fundamentals are you targeting? What does a win look like today?" },
+      { id: "tue-1b", title: "Reading", category: "reading", plannedMinutes: 60 },
       { id: "tue-2", title: "Anatomy Drill", category: "drawing", plannedMinutes: 60, description: "Pure anatomy construction. Simplify into geometric forms. Practise until the pen knows the path.", focusOptions: ["anatomy", "form-construction", "proportion-placement", "gesture"] },
       { id: "tue-3", title: "Sculpture Session", category: "sculpture", plannedMinutes: 120, description: "3D fundamentals. Volume, gesture, planes. Same fundamentals as 2D but in space.", focusOptions: ["form-construction", "anatomy", "gesture", "proportion-placement"] },
       { id: "tue-4", title: "Colour Study", category: "painting", plannedMinutes: 60, description: "Isolated colour work. Mixing, palette studies, colour from memory. Colour is its own beast.", focusOptions: ["colour-theory", "values"] },
@@ -409,7 +411,8 @@ export const MIND_SCHEDULE: MindDayPlan[] = [
   {
     dayOfWeek: "wednesday",
     blocks: [
-      { id: "wed-1", title: "Reading", category: "reading", plannedMinutes: 60 },
+      { id: "wed-1", title: "Daily Planning", category: "documentation", plannedMinutes: 15, description: "Plan the day. What fundamentals are you targeting? What does a win look like today?" },
+      { id: "wed-1b", title: "Reading", category: "reading", plannedMinutes: 60 },
       { id: "wed-2", title: "Master Study", category: "master-study", plannedMinutes: 60, description: "Different master from Monday. Study their strengths where you are weakest.", focusOptions: ["composition", "values", "colour-theory", "proportion-placement", "form-construction"] },
       { id: "wed-3", title: "Memory Loop", category: "drawing", plannedMinutes: 60, description: "Draw from memory. Compare to reference AFTER. Identify the gaps.", focusOptions: ["proportion-placement", "form-construction", "anatomy", "gesture", "perspective"] },
       { id: "wed-4", title: "Painting Finish", category: "painting", plannedMinutes: 150, description: "Finish and polish. Edges, colour correction, final details. Execute at your highest standard.", focusOptions: ["composition", "values", "colour-theory"] },
@@ -419,7 +422,8 @@ export const MIND_SCHEDULE: MindDayPlan[] = [
   {
     dayOfWeek: "thursday",
     blocks: [
-      { id: "thu-1", title: "Reading", category: "reading", plannedMinutes: 60 },
+      { id: "thu-1", title: "Daily Planning", category: "documentation", plannedMinutes: 15, description: "Plan the day. What fundamentals are you targeting? What does a win look like today?" },
+      { id: "thu-1b", title: "Reading", category: "reading", plannedMinutes: 60 },
       { id: "thu-2", title: "Construction Drill", category: "drawing", plannedMinutes: 60, description: "Heads, hands, and full figures from construction. Mannequinise then detail.", focusOptions: ["form-construction", "anatomy", "proportion-placement", "gesture", "perspective"] },
       { id: "thu-3", title: "Sculpture Session", category: "sculpture", plannedMinutes: 120, description: "Push detail and surface quality. Refine what Tuesday started.", focusOptions: ["form-construction", "anatomy", "gesture", "proportion-placement"] },
       { id: "thu-4", title: "Colour Study", category: "painting", plannedMinutes: 60, description: "Colour relationships, temperature shifts, limited palette exercises. Train the eye.", focusOptions: ["colour-theory", "values"] },
@@ -429,7 +433,8 @@ export const MIND_SCHEDULE: MindDayPlan[] = [
   {
     dayOfWeek: "friday",
     blocks: [
-      { id: "fri-1", title: "Reading", category: "reading", plannedMinutes: 60 },
+      { id: "fri-1", title: "Daily Planning", category: "documentation", plannedMinutes: 15, description: "Plan the day. What fundamentals are you targeting? What does a win look like today?" },
+      { id: "fri-1b", title: "Reading", category: "reading", plannedMinutes: 60 },
       { id: "fri-2", title: "Timed Studies", category: "drawing", plannedMinutes: 45, description: "Quick timed gesture and form studies. 2-5 minute poses. Speed builds instinct.", focusOptions: ["gesture", "form-construction", "proportion-placement", "anatomy"] },
       { id: "fri-3", title: "Production Painting", category: "painting", plannedMinutes: 180, description: "Full production painting. This is game day. Execute at the highest level you can reach.", focusOptions: ["composition", "values", "colour-theory"] },
       { id: "fri-4", title: "Experimentation", category: "experimentation", plannedMinutes: 45, description: "Try something uncomfortable. New colour palette, unfamiliar subject, different tool.", focusOptions: ["colour-theory", "composition", "values", "form-construction", "perspective"] },
@@ -438,7 +443,8 @@ export const MIND_SCHEDULE: MindDayPlan[] = [
   {
     dayOfWeek: "saturday",
     blocks: [
-      { id: "sat-1", title: "Reading", category: "reading", plannedMinutes: 60 },
+      { id: "sat-1", title: "Daily Planning", category: "documentation", plannedMinutes: 15, description: "Plan the day. What fundamentals are you targeting? What does a win look like today?" },
+      { id: "sat-1b", title: "Reading", category: "reading", plannedMinutes: 60 },
       { id: "sat-2", title: "Sculpture Session", category: "sculpture", plannedMinutes: 120, description: "Third session of the week. Long-form sculpting. Push ambition.", focusOptions: ["form-construction", "anatomy", "gesture", "proportion-placement"] },
       { id: "sat-3", title: "Life Drawing", category: "drawing", plannedMinutes: 120, description: "Draw from life. Physical objects, self-portrait, anything real in front of you. Train the eye, not the memory.", focusOptions: ["gesture", "form-construction", "proportion-placement", "values", "anatomy", "perspective"], monthlyOnly: true },
       { id: "sat-4", title: "Corrections Pass", category: "drawing", plannedMinutes: 75, description: "Revisit the week's drawings. Overlay corrections. What errors keep recurring?", focusOptions: ["proportion-placement", "form-construction", "anatomy", "gesture", "perspective", "values"] },
@@ -449,7 +455,8 @@ export const MIND_SCHEDULE: MindDayPlan[] = [
   {
     dayOfWeek: "sunday",
     blocks: [
-      { id: "sun-1", title: "Reading", category: "reading", plannedMinutes: 60 },
+      { id: "sun-1", title: "Daily Planning", category: "documentation", plannedMinutes: 15, description: "Plan the day. What fundamentals are you targeting? What does a win look like today?" },
+      { id: "sun-1b", title: "Reading", category: "reading", plannedMinutes: 60 },
       { id: "sun-2", title: "Memory Sketch", category: "drawing", plannedMinutes: 60, description: "Relaxed memory sketching. Draw what you love. Let instinct lead.", focusOptions: ["gesture", "form-construction", "composition", "proportion-placement"] },
       { id: "sun-3", title: "Reference Library", category: "documentation", plannedMinutes: 50, description: "Organise and curate reference library. Tag by fundamental." },
       { id: "sun-4", title: "Reflection Writing", category: "writing", plannedMinutes: 45, description: "Where are you on the path? What does the 0.1% version of you do differently?" },
