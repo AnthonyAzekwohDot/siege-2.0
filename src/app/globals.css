@@ -1,0 +1,216 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Siege 2.0 — Liquid Glass Design System
+   ============================================================ */
+
+:root {
+  /* Glass */
+  --glass-bg: rgba(255, 255, 255, 0.6);
+  --glass-bg-elevated: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-highlight: rgba(255, 255, 255, 0.5);
+  --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+  --glass-blur: 16px;
+
+  /* Gradient background */
+  --gradient-start: 220 90% 96%;
+  --gradient-mid: 250 85% 95%;
+  --gradient-end: 200 80% 94%;
+
+  /* Semantic colours */
+  --background: 220 30% 97%;
+  --foreground: 220 10% 12%;
+
+  --primary: 220 85% 50%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 220 15% 88%;
+  --secondary-foreground: 220 10% 12%;
+
+  --muted: 220 15% 92%;
+  --muted-foreground: 220 10% 40%;
+
+  --accent: 220 20% 94%;
+  --accent-foreground: 220 10% 12%;
+
+  --destructive: 0 75% 45%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 220 20% 90%;
+  --input: 220 15% 80%;
+  --ring: 220 85% 50%;
+
+  --radius: 0.75rem;
+
+  /* Card */
+  --card: 0 0% 100%;
+  --card-foreground: 220 10% 12%;
+
+  /* Charts */
+  --chart-1: 220 80% 55%;
+  --chart-2: 180 65% 45%;
+  --chart-3: 145 60% 42%;
+  --chart-4: 30 80% 55%;
+  --chart-5: 280 65% 55%;
+
+  /* Font */
+  --font-sans: "SF Pro Display", -apple-system, "Inter", system-ui, sans-serif;
+}
+
+.dark {
+  /* Glass */
+  --glass-bg: rgba(15, 20, 30, 0.7);
+  --glass-bg-elevated: rgba(25, 30, 45, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-highlight: rgba(255, 255, 255, 0.15);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --glass-blur: 20px;
+
+  /* Gradient background */
+  --gradient-start: 230 25% 12%;
+  --gradient-mid: 250 30% 15%;
+  --gradient-end: 220 25% 10%;
+
+  /* Semantic colours */
+  --background: 230 20% 8%;
+  --foreground: 220 15% 95%;
+
+  --primary: 220 80% 55%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 230 15% 20%;
+  --secondary-foreground: 220 15% 95%;
+
+  --muted: 230 15% 18%;
+  --muted-foreground: 220 10% 60%;
+
+  --accent: 230 20% 22%;
+  --accent-foreground: 220 15% 95%;
+
+  --destructive: 0 70% 50%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 230 15% 22%;
+  --input: 230 15% 28%;
+  --ring: 220 80% 55%;
+
+  /* Card */
+  --card: 230 20% 12%;
+  --card-foreground: 220 15% 95%;
+
+  /* Charts */
+  --chart-1: 220 75% 60%;
+  --chart-2: 180 60% 50%;
+  --chart-3: 145 55% 48%;
+  --chart-4: 30 75% 60%;
+  --chart-5: 280 60% 60%;
+}
+
+/* ============================================================
+   Base Layer
+   ============================================================ */
+
+@layer base {
+  body {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--gradient-start)),
+      hsl(var(--gradient-mid)),
+      hsl(var(--gradient-end))
+    );
+    background-attachment: fixed;
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+}
+
+/* ============================================================
+   Component Layer — Glass
+   ============================================================ */
+
+@layer components {
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: var(--radius);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .glass-card:hover {
+    box-shadow: 0 12px 40px rgba(31, 38, 135, 0.22);
+  }
+
+  .dark .glass-card:hover {
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  }
+
+  .glass-header {
+    background: var(--glass-bg-elevated);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-bottom: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .glass-nav {
+    background: var(--glass-bg-elevated);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-top: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+}
+
+/* ============================================================
+   Utility Classes
+   ============================================================ */
+
+@layer utilities {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Touch feedback for mobile */
+@media (hover: none) {
+  .glass-card:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+
+  button:active,
+  a:active {
+    opacity: 0.8;
+  }
+}
+
+/* Reduce motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
