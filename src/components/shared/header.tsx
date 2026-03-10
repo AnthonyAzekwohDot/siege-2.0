@@ -18,7 +18,7 @@ export function Header() {
   const title = PAGE_TITLES[pathname] ?? "Siege";
 
   return (
-    <header className="glass-header sticky top-0 z-40 px-5 pt-3 pb-2">
+    <header className="glass-header sticky top-0 z-40 px-5 pt-3 pb-2 safe-area-top">
       <div className="max-w-2xl mx-auto flex items-center justify-between">
         <h1 className="text-[28px] font-bold tracking-tight text-[hsl(var(--foreground))]">
           {title}

@@ -1,5 +1,14 @@
 import { supabase } from "@/lib/supabase";
 import { calculateBMR, calculateTDEE, WALK_CALORIES, CALORIES_PER_STEP } from "@/lib/calculations";
+
+/** Format a Date as yyyy-MM-dd in LOCAL time (not UTC). */
+function localDateStr(d: Date = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 import type {
   DailyLog,
   MindDailyLog,
@@ -482,7 +491,7 @@ async function fetchNutritionSummary(date: string): Promise<DailyNutritionSummar
 export async function getNutritionSummaries(days: number): Promise<DailyNutritionSummary[]> {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
-  const startDateStr = startDate.toISOString().split("T")[0];
+  const startDateStr = localDateStr(startDate);
 
   const { data, error } = await supabase
     .from("daily_nutrition_summaries")
@@ -646,7 +655,7 @@ export async function logWeight(date: string, weightKg: number): Promise<DailyLo
 export async function getWeightHistory(days: number): Promise<{ date: string; weight_kg: number }[]> {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
-  const startDateStr = startDate.toISOString().split("T")[0];
+  const startDateStr = localDateStr(startDate);
 
   const { data, error } = await supabase
     .from("daily_logs")
@@ -662,7 +671,7 @@ export async function getWeightHistory(days: number): Promise<{ date: string; we
 export async function getDailyLogsHistory(days: number): Promise<DailyLog[]> {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
-  const startDateStr = startDate.toISOString().split("T")[0];
+  const startDateStr = localDateStr(startDate);
 
   const { data, error } = await supabase
     .from("daily_logs")
@@ -677,11 +686,12 @@ export async function getDailyLogsHistory(days: number): Promise<DailyLog[]> {
 // ============ INSIGHTS ============
 
 function getWeekStart(dateStr: string): string {
-  const date = new Date(dateStr);
+  // Parse as local date (append T12:00 to avoid UTC midnight edge cases)
+  const date = new Date(dateStr + "T12:00:00");
   const day = date.getDay();
   const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(date.setDate(diff));
-  return monday.toISOString().split("T")[0];
+  date.setDate(diff);
+  return localDateStr(date);
 }
 
 async function shouldShowInsight(profile: UserProfile, today: string): Promise<boolean> {

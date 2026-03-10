@@ -1,7 +1,21 @@
-// Siege 2.0 — Push Notification Service Worker
+// Siege 2.0 — Service Worker (Push + Offline Cache)
 
+const CACHE_NAME = "siege-v1";
 const APP_ICON = "/icon-192.png";
 const APP_BADGE = "/icon-192.png";
+
+// App shell files to pre-cache
+const APP_SHELL = [
+  "/",
+  "/schedule",
+  "/nutrition",
+  "/mind",
+  "/progress",
+  "/settings",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/apple-touch-icon.png",
+];
 
 // URL mapping for notification types
 const TYPE_URLS = {
@@ -13,7 +27,73 @@ const TYPE_URLS = {
   default: "/",
 };
 
-// Handle incoming push events
+// ============ Install: pre-cache app shell ============
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
+  );
+  self.skipWaiting();
+});
+
+// ============ Activate: clean old caches ============
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((key) => key !== CACHE_NAME)
+            .map((key) => caches.delete(key))
+        )
+      )
+      .then(() => clients.claim())
+  );
+});
+
+// ============ Fetch: network-first with cache fallback ============
+
+self.addEventListener("fetch", (event) => {
+  const { request } = event;
+
+  // Skip non-GET and API/analytics requests
+  if (
+    request.method !== "GET" ||
+    request.url.includes("/api/") ||
+    request.url.includes("supabase") ||
+    request.url.includes("analytics")
+  ) {
+    return;
+  }
+
+  event.respondWith(
+    fetch(request)
+      .then((response) => {
+        // Cache successful responses
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+        }
+        return response;
+      })
+      .catch(() => {
+        // Offline: serve from cache
+        return caches.match(request).then((cached) => {
+          if (cached) return cached;
+          // For navigation requests, serve the cached home page as fallback
+          if (request.mode === "navigate") {
+            return caches.match("/");
+          }
+          return new Response("Offline", { status: 503 });
+        });
+      })
+  );
+});
+
+// ============ Push notifications ============
+
 self.addEventListener("push", (event) => {
   if (!event.data) return;
 
@@ -46,7 +126,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
-// Handle notification clicks
+// ============ Notification clicks ============
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
@@ -56,7 +137,6 @@ self.addEventListener("notificationclick", (event) => {
     clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((clientList) => {
-        // If a window is already open, focus it and navigate
         for (const client of clientList) {
           if ("focus" in client) {
             client.focus();
@@ -64,13 +144,7 @@ self.addEventListener("notificationclick", (event) => {
             return;
           }
         }
-        // Otherwise open a new window
         return clients.openWindow(url);
       })
   );
-});
-
-// Activate immediately
-self.addEventListener("activate", (event) => {
-  event.waitUntil(clients.claim());
 });

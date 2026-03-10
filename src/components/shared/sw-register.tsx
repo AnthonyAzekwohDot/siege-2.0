@@ -45,8 +45,13 @@ function scheduleLocalNotifications() {
 
 export function ServiceWorkerRegister() {
   useEffect(() => {
-    registerServiceWorker().then(() => {
+    registerServiceWorker().then((reg) => {
       scheduleLocalNotifications();
+
+      // Poll for SW updates every 60 minutes
+      if (reg) {
+        setInterval(() => reg.update(), 60 * 60 * 1000);
+      }
     });
   }, []);
 

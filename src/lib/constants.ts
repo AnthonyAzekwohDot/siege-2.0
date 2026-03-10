@@ -382,73 +382,77 @@ export const WORKOUT_SCHEDULE: DaySchedule[] = [
 ];
 
 // ============ MIND SCHEDULE ============
+// Rebuilt for 0.1% mastery. Every block targets specific fundamentals.
+// Fundamentals: hands, head, muscle-groups, gesture, shape, form, colour, composition, values, narrative
 
 export const MIND_SCHEDULE: MindDayPlan[] = [
   {
     dayOfWeek: "monday",
     blocks: [
-      { id: "mon-1", title: "Reading", category: "reading", plannedMinutes: 45 },
-      { id: "mon-2", title: "Documentation", category: "documentation", plannedMinutes: 15 },
-      { id: "mon-3", title: "Memory Loop", category: "drawing", plannedMinutes: 90, description: "Draw from memory. No reference. Test recall of form, proportion, and structure." },
-      { id: "mon-4", title: "Painting Structure", category: "painting", plannedMinutes: 150, description: "Block in painting structure. Values, composition, colour mapping." },
-      { id: "mon-5", title: "Style Constitution", category: "writing", plannedMinutes: 30, description: "Write or refine rules that define your visual style." },
+      { id: "mon-1", title: "Reading", category: "reading", plannedMinutes: 60 },
+      { id: "mon-2", title: "Master Study", category: "master-study", plannedMinutes: 60, description: "Pick one master. Copy a section. Understand WHY it works, not just WHAT it looks like.", focusOptions: ["composition", "values", "colour-theory", "proportion-placement", "form-construction"] },
+      { id: "mon-3", title: "Memory Loop", category: "drawing", plannedMinutes: 60, description: "Draw from memory. No reference. If you can't draw it from memory, you don't know it yet.", focusOptions: ["proportion-placement", "form-construction", "anatomy", "gesture", "perspective"] },
+      { id: "mon-4", title: "Painting Structure", category: "painting", plannedMinutes: 150, description: "Block in painting. Values first, then colour. Composition locked before any detail.", focusOptions: ["composition", "values", "colour-theory"] },
+      { id: "mon-5", title: "Style Constitution", category: "writing", plannedMinutes: 45, description: "Write or refine rules that define your visual style. What you do. What you refuse to do." },
     ],
   },
   {
     dayOfWeek: "tuesday",
     blocks: [
-      { id: "tue-1", title: "Reading", category: "reading", plannedMinutes: 45 },
-      { id: "tue-2", title: "Documentation", category: "documentation", plannedMinutes: 15 },
-      { id: "tue-3", title: "Anatomy Simplification", category: "drawing", plannedMinutes: 60, description: "Simplify complex anatomy into geometric forms. Practise construction." },
-      { id: "tue-4", title: "Sculpture Session #1", category: "sculpture", plannedMinutes: 90, description: "First sculpture session of the week. Focus on volume and gesture." },
+      { id: "tue-1", title: "Reading", category: "reading", plannedMinutes: 60 },
+      { id: "tue-2", title: "Anatomy Drill", category: "drawing", plannedMinutes: 60, description: "Pure anatomy construction. Simplify into geometric forms. Practise until the pen knows the path.", focusOptions: ["anatomy", "form-construction", "proportion-placement", "gesture"] },
+      { id: "tue-3", title: "Sculpture Session", category: "sculpture", plannedMinutes: 120, description: "3D fundamentals. Volume, gesture, planes. Same fundamentals as 2D but in space.", focusOptions: ["form-construction", "anatomy", "gesture", "proportion-placement"] },
+      { id: "tue-4", title: "Colour Study", category: "painting", plannedMinutes: 60, description: "Isolated colour work. Mixing, palette studies, colour from memory. Colour is its own beast.", focusOptions: ["colour-theory", "values"] },
+      { id: "tue-5", title: "Experimentation", category: "experimentation", plannedMinutes: 45, description: "Try something you've never tried. New medium, technique, or approach. Failure is the point.", focusOptions: ["colour-theory", "composition", "values", "form-construction", "perspective"] },
     ],
   },
   {
     dayOfWeek: "wednesday",
     blocks: [
-      { id: "wed-1", title: "Reading", category: "reading", plannedMinutes: 45 },
-      { id: "wed-2", title: "Documentation", category: "documentation", plannedMinutes: 15 },
-      { id: "wed-3", title: "Memory Loop", category: "drawing", plannedMinutes: 90, description: "Draw from memory. No reference. Test recall of form, proportion, and structure." },
-      { id: "wed-4", title: "Painting Finish", category: "painting", plannedMinutes: 150, description: "Finish and polish painting. Final details, edges, and colour correction." },
-      { id: "wed-5", title: "Self-audit", category: "writing", plannedMinutes: 20, description: "Review the week so far. What worked, what didn't. Honest assessment." },
+      { id: "wed-1", title: "Reading", category: "reading", plannedMinutes: 60 },
+      { id: "wed-2", title: "Master Study", category: "master-study", plannedMinutes: 60, description: "Different master from Monday. Study their strengths where you are weakest.", focusOptions: ["composition", "values", "colour-theory", "proportion-placement", "form-construction"] },
+      { id: "wed-3", title: "Memory Loop", category: "drawing", plannedMinutes: 60, description: "Draw from memory. Compare to reference AFTER. Identify the gaps.", focusOptions: ["proportion-placement", "form-construction", "anatomy", "gesture", "perspective"] },
+      { id: "wed-4", title: "Painting Finish", category: "painting", plannedMinutes: 150, description: "Finish and polish. Edges, colour correction, final details. Execute at your highest standard.", focusOptions: ["composition", "values", "colour-theory"] },
+      { id: "wed-5", title: "Self-audit", category: "writing", plannedMinutes: 30, description: "What improved this week? What's still weak? Be honest. Write it down." },
     ],
   },
   {
     dayOfWeek: "thursday",
     blocks: [
-      { id: "thu-1", title: "Reading", category: "reading", plannedMinutes: 45 },
-      { id: "thu-2", title: "Documentation", category: "documentation", plannedMinutes: 15 },
-      { id: "thu-3", title: "Drapery + Hands", category: "drawing", plannedMinutes: 70, description: "Study drapery folds and hand construction. Focus on rhythm and overlap." },
-      { id: "thu-4", title: "Sculpture Session #2", category: "sculpture", plannedMinutes: 90, description: "Second sculpture session. Refine forms and add detail." },
+      { id: "thu-1", title: "Reading", category: "reading", plannedMinutes: 60 },
+      { id: "thu-2", title: "Construction Drill", category: "drawing", plannedMinutes: 60, description: "Heads, hands, and full figures from construction. Mannequinise then detail.", focusOptions: ["form-construction", "anatomy", "proportion-placement", "gesture", "perspective"] },
+      { id: "thu-3", title: "Sculpture Session", category: "sculpture", plannedMinutes: 120, description: "Push detail and surface quality. Refine what Tuesday started.", focusOptions: ["form-construction", "anatomy", "gesture", "proportion-placement"] },
+      { id: "thu-4", title: "Colour Study", category: "painting", plannedMinutes: 60, description: "Colour relationships, temperature shifts, limited palette exercises. Train the eye.", focusOptions: ["colour-theory", "values"] },
       { id: "thu-5", title: "Collection Bible", category: "writing", plannedMinutes: 45, description: "Write or update the collection bible. Themes, narratives, series structure." },
     ],
   },
   {
     dayOfWeek: "friday",
     blocks: [
-      { id: "fri-1", title: "Reading", category: "reading", plannedMinutes: 45 },
-      { id: "fri-2", title: "Documentation", category: "documentation", plannedMinutes: 15 },
-      { id: "fri-3", title: "Timed Studies", category: "drawing", plannedMinutes: 60, description: "Quick timed gesture and form studies. 2-5 minute poses." },
-      { id: "fri-4", title: "Production Painting", category: "painting", plannedMinutes: 150, description: "Full production painting session. Execute at highest level." },
-      { id: "fri-5", title: "Admin-lite", category: "admin", plannedMinutes: 30, description: "Light admin tasks. Emails, scheduling, logistics." },
+      { id: "fri-1", title: "Reading", category: "reading", plannedMinutes: 60 },
+      { id: "fri-2", title: "Timed Studies", category: "drawing", plannedMinutes: 45, description: "Quick timed gesture and form studies. 2-5 minute poses. Speed builds instinct.", focusOptions: ["gesture", "form-construction", "proportion-placement", "anatomy"] },
+      { id: "fri-3", title: "Production Painting", category: "painting", plannedMinutes: 180, description: "Full production painting. This is game day. Execute at the highest level you can reach.", focusOptions: ["composition", "values", "colour-theory"] },
+      { id: "fri-4", title: "Experimentation", category: "experimentation", plannedMinutes: 45, description: "Try something uncomfortable. New colour palette, unfamiliar subject, different tool.", focusOptions: ["colour-theory", "composition", "values", "form-construction", "perspective"] },
     ],
   },
   {
     dayOfWeek: "saturday",
     blocks: [
-      { id: "sat-1", title: "Reading", category: "reading", plannedMinutes: 45 },
-      { id: "sat-2", title: "Weekly Review", category: "writing", plannedMinutes: 75, description: "Full weekly review. Assess progress against KPIs. Plan adjustments." },
-      { id: "sat-3", title: "Corrections Pass", category: "drawing", plannedMinutes: 120, description: "Revisit week's drawings. Make corrections. Identify recurring weaknesses." },
-      { id: "sat-4", title: "Next-week Plan", category: "admin", plannedMinutes: 30, description: "Plan next week's blocks, priorities, and focus areas." },
+      { id: "sat-1", title: "Reading", category: "reading", plannedMinutes: 60 },
+      { id: "sat-2", title: "Sculpture Session", category: "sculpture", plannedMinutes: 120, description: "Third session of the week. Long-form sculpting. Push ambition.", focusOptions: ["form-construction", "anatomy", "gesture", "proportion-placement"] },
+      { id: "sat-3", title: "Life Drawing", category: "drawing", plannedMinutes: 120, description: "Draw from life. Physical objects, self-portrait, anything real in front of you. Train the eye, not the memory.", focusOptions: ["gesture", "form-construction", "proportion-placement", "values", "anatomy", "perspective"], monthlyOnly: true },
+      { id: "sat-4", title: "Corrections Pass", category: "drawing", plannedMinutes: 75, description: "Revisit the week's drawings. Overlay corrections. What errors keep recurring?", focusOptions: ["proportion-placement", "form-construction", "anatomy", "gesture", "perspective", "values"] },
+      { id: "sat-5", title: "Weekly Review", category: "writing", plannedMinutes: 75, description: "Full weekly review. Which fundamentals got attention? Which were neglected? Rate your growth honestly." },
+      { id: "sat-6", title: "Next-week Plan", category: "admin", plannedMinutes: 30, description: "Plan next week. Target your weakest fundamental hardest." },
     ],
   },
   {
     dayOfWeek: "sunday",
     blocks: [
-      { id: "sun-1", title: "Reading", category: "reading", plannedMinutes: 45 },
-      { id: "sun-2", title: "Memory Sketch", category: "drawing", plannedMinutes: 75, description: "Relaxed memory sketching. No pressure. Explore forms from memory." },
-      { id: "sun-3", title: "Reference Library", category: "documentation", plannedMinutes: 50, description: "Organise and curate reference library. Tag, sort, and annotate." },
-      { id: "sun-4", title: "Reflection Writing", category: "writing", plannedMinutes: 30, description: "Free-form reflection. Journal about the craft, the journey, the vision." },
+      { id: "sun-1", title: "Reading", category: "reading", plannedMinutes: 60 },
+      { id: "sun-2", title: "Memory Sketch", category: "drawing", plannedMinutes: 60, description: "Relaxed memory sketching. Draw what you love. Let instinct lead.", focusOptions: ["gesture", "form-construction", "composition", "proportion-placement"] },
+      { id: "sun-3", title: "Reference Library", category: "documentation", plannedMinutes: 50, description: "Organise and curate reference library. Tag by fundamental." },
+      { id: "sun-4", title: "Reflection Writing", category: "writing", plannedMinutes: 45, description: "Where are you on the path? What does the 0.1% version of you do differently?" },
     ],
   },
 ];
@@ -456,9 +460,9 @@ export const MIND_SCHEDULE: MindDayPlan[] = [
 // ============ MINIMUM WIN BLOCKS ============
 
 export const MINIMUM_WIN_BLOCKS: MindBlock[] = [
-  { id: "min-1", title: "Memory Sketch", category: "drawing", plannedMinutes: 30 },
-  { id: "min-2", title: "Paint Session", category: "painting", plannedMinutes: 30 },
-  { id: "min-3", title: "Reading", category: "reading", plannedMinutes: 45 },
+  { id: "min-1", title: "Memory Sketch", category: "drawing", plannedMinutes: 30, focusOptions: ["gesture", "form-construction", "proportion-placement", "anatomy"] },
+  { id: "min-2", title: "Paint Session", category: "painting", plannedMinutes: 30, focusOptions: ["values", "colour-theory", "composition"] },
+  { id: "min-3", title: "Reading", category: "reading", plannedMinutes: 60 },
 ];
 
 // ============ MIND CATEGORY INFO ============
@@ -471,6 +475,8 @@ export const MIND_CATEGORY_INFO: Record<MindCategory, string> = {
   reading: "chart-5",
   admin: "muted-foreground",
   documentation: "primary",
+  "master-study": "chart-4",
+  experimentation: "chart-2",
 };
 
 // ============ DEEP WORK CATEGORIES ============
@@ -480,17 +486,19 @@ export const DEEP_WORK_CATEGORIES: MindCategory[] = [
   "painting",
   "sculpture",
   "writing",
+  "master-study",
+  "experimentation",
 ];
 
 // ============ DEFAULT MIND KPI ============
 
 export const DEFAULT_MIND_KPI: MindKPIConfig = {
-  deepWorkTargetHours: 20,
+  deepWorkTargetHours: 25,
   memoryLoopsTarget: 3,
   sculptureTarget: 2,
   writingPagesTarget: 2,
   documentationTarget: 1,
-  readingDailyMinutes: 45,
+  readingDailyMinutes: 60,
 };
 
 // ============ DEFAULT SAFE MEALS ============

@@ -17,7 +17,6 @@
     "date-fns": "^3",
     "lucide-react": "^0.453",
     "next": "^16",
-    "next-pwa": "^5",
     "openai": "^4",
     "react": "^19",
     "react-dom": "^19",

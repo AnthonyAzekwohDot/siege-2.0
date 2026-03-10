@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameMonth } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay } from "date-fns";
 
 import * as queries from "@/lib/queries";
 import type { DailyLog } from "@/lib/types";
@@ -37,10 +37,16 @@ interface MonthStats {
   daysTracked: number;
 }
 
+/** Parse "yyyy-MM-dd" into local-time parts without Date constructor timezone issues */
+function parseDateParts(dateStr: string): { year: number; month: number; day: number } {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return { year: y, month: m - 1, day: d };
+}
+
 function computeMonthStats(logs: DailyLog[], year: number, month: number): MonthStats {
   const monthLogs = logs.filter((l) => {
-    const d = parseISO(l.date);
-    return d.getFullYear() === year && d.getMonth() === month;
+    const { year: y, month: m } = parseDateParts(l.date);
+    return y === year && m === month;
   });
 
   const totalSteps = monthLogs.reduce((s, l) => s + l.steps, 0);
@@ -504,8 +510,8 @@ export default function ProgressPage() {
 
     const months = new Set<string>();
     for (const log of allLogs) {
-      const d = parseISO(log.date);
-      months.add(`${d.getFullYear()}-${d.getMonth()}`);
+      const { year: y, month: m } = parseDateParts(log.date);
+      months.add(`${y}-${m}`);
     }
 
     // Always include current month

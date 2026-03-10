@@ -16,6 +16,9 @@ export const metadata: Metadata = {
   title: "Siege",
   description: "We Don't Negotiate With The Plan",
   manifest: "/manifest.json",
+  icons: {
+    apple: "/apple-touch-icon.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

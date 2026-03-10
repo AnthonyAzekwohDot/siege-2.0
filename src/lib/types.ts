@@ -54,8 +54,41 @@ export interface DailyLog {
 
 // ============ MIND TYPES ============
 
-export type MindCategory = "drawing" | "painting" | "sculpture" | "writing" | "reading" | "admin" | "documentation";
+export type MindCategory = "drawing" | "painting" | "sculpture" | "writing" | "reading" | "admin" | "documentation" | "master-study" | "experimentation";
 export type BlockStatus = "pending" | "in_progress" | "done" | "partial" | "skipped";
+export type StretchLevel = "comfort" | "stretch" | "breakthrough";
+
+/** The specific fundamentals Anthony is drilling to reach 0.1% mastery */
+export type Fundamental =
+  | "proportion-placement" | "form-construction" | "perspective"
+  | "anatomy" | "gesture" | "composition"
+  | "values" | "colour-theory";
+
+/** Drawing skills */
+export const DRAWING_FUNDAMENTALS: Fundamental[] = [
+  "proportion-placement", "form-construction", "perspective",
+  "anatomy", "gesture", "composition",
+];
+
+/** Painting skills */
+export const PAINTING_FUNDAMENTALS: Fundamental[] = [
+  "values", "colour-theory",
+];
+
+export const FUNDAMENTALS: Fundamental[] = [
+  ...DRAWING_FUNDAMENTALS, ...PAINTING_FUNDAMENTALS,
+];
+
+export const FUNDAMENTAL_LABELS: Record<Fundamental, string> = {
+  "proportion-placement": "Proportion & Placement",
+  "form-construction": "Form & Construction",
+  "perspective": "Perspective",
+  "anatomy": "Anatomy",
+  "gesture": "Gesture",
+  "composition": "Composition",
+  "values": "Values",
+  "colour-theory": "Colour Theory",
+};
 
 export interface MindBlock {
   id: string;
@@ -63,6 +96,10 @@ export interface MindBlock {
   category: MindCategory;
   plannedMinutes: number;
   description?: string;
+  /** Which fundamentals this block can target */
+  focusOptions?: Fundamental[];
+  /** If true, only shows on the first week of each month */
+  monthlyOnly?: boolean;
 }
 
 export interface MindLogEntry {
@@ -78,6 +115,12 @@ export interface MindLogEntry {
   rating?: number;
   startedAt?: string;
   completedAt?: string;
+  /** Which fundamentals were practiced this session */
+  fundamentals?: Fundamental[];
+  /** Did you push past comfort or play it safe? */
+  stretchLevel?: StretchLevel;
+  /** If master study, who/what was studied */
+  masterReference?: string;
 }
 
 export interface MindDailyLog {
