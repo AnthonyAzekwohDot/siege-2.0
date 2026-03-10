@@ -1,6 +1,6 @@
 // Siege 2.0 — Service Worker (Push + Offline Cache)
 
-const CACHE_NAME = "siege-v1";
+const CACHE_NAME = "siege-v2";
 const APP_ICON = "/icon-192.png";
 const APP_BADGE = "/icon-192.png";
 

@@ -26,7 +26,7 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   }
 
   try {
-    const registration = await navigator.serviceWorker.register("/sw.js", {
+    const registration = await navigator.serviceWorker.register("/sw.js?v=2", {
       scope: "/",
     });
     console.log("Service worker registered");
