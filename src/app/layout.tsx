@@ -38,7 +38,7 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased`}>
         <Providers>
           <Header />
-          <main className="pt-14 pb-20">{children}</main>
+          <main className="pt-14 pb-24">{children}</main>
           <BottomNav />
         </Providers>
       </body>

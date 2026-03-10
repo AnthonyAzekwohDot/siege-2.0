@@ -23,7 +23,7 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="glass-nav fixed bottom-0 left-0 right-0 z-50 safe-area-bottom">
+    <nav className="glass-nav fixed bottom-3 left-0 right-0 z-50 safe-area-bottom">
       <div className="flex items-center justify-around px-1 pt-2 pb-1.5">
         {tabs.map(({ href, label, icon: Icon }) => {
           const isActive =
