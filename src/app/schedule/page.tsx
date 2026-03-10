@@ -44,11 +44,12 @@ const SHORT_DAYS: Record<DayOfWeek, string> = {
   sunday: "Sun",
 };
 
+const STABLE_NOW = new Date();
+const STABLE_WEEK_START = startOfWeek(STABLE_NOW, { weekStartsOn: 1 });
+
 function getDateForDay(day: DayOfWeek): string {
-  const today = new Date();
-  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const dayIndex = DAYS.indexOf(day);
-  return format(addDays(weekStart, dayIndex), "yyyy-MM-dd");
+  return format(addDays(STABLE_WEEK_START, dayIndex), "yyyy-MM-dd");
 }
 
 // ---------- Exercise Card (inline, collapsible) ----------
@@ -74,7 +75,7 @@ function ExerciseCard({
       <div className="flex items-center gap-3">
         <button
           onClick={onToggle}
-          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+          className={`w-8 h-8 min-w-[44px] min-h-[44px] rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
             isCompleted
               ? "bg-[hsl(var(--chart-3))] border-[hsl(var(--chart-3))]"
               : "border-[hsl(var(--input))]"
@@ -186,7 +187,7 @@ function WeekOverview({
   selectedDay: DayOfWeek;
   onSelectDay: (day: DayOfWeek) => void;
 }) {
-  const todayDow = format(new Date(), "EEEE").toLowerCase() as DayOfWeek;
+  const todayDow = format(STABLE_NOW, "EEEE").toLowerCase() as DayOfWeek;
 
   return (
     <div className="flex gap-1.5 overflow-x-auto pb-1">
@@ -210,10 +211,7 @@ function WeekOverview({
               {SHORT_DAYS[day]}
             </span>
             <span className="text-lg font-bold">
-              {format(
-                addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), DAYS.indexOf(day)),
-                "d"
-              )}
+              {format(addDays(STABLE_WEEK_START, DAYS.indexOf(day)), "d")}
             </span>
             {isToday && (
               <div
@@ -236,7 +234,7 @@ function WeekOverview({
 
 export default function SchedulePage() {
   const queryClient = useQueryClient();
-  const todayDow = format(new Date(), "EEEE").toLowerCase() as DayOfWeek;
+  const todayDow = format(STABLE_NOW, "EEEE").toLowerCase() as DayOfWeek;
   const [selectedDay, setSelectedDay] = useState<DayOfWeek>(todayDow);
 
   const dateKey = getDateForDay(selectedDay);

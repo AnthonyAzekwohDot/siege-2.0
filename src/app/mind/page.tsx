@@ -99,10 +99,10 @@ function StarRating({
         <button
           key={star}
           onClick={() => onChange(star)}
-          className="p-0.5"
+          className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
         >
           <Star
-            className={`w-5 h-5 transition-colors ${
+            className={`w-6 h-6 transition-colors ${
               star <= value
                 ? "fill-[hsl(var(--chart-4))] text-[hsl(var(--chart-4))]"
                 : "text-[hsl(var(--muted-foreground))]"
@@ -235,7 +235,7 @@ function CompletionDialog({
 
 export default function MindPage() {
   const queryClient = useQueryClient();
-  const today = new Date();
+  const [today] = useState(() => new Date());
   const dateKey = format(today, "yyyy-MM-dd");
   const dayOfWeek = format(today, "EEEE").toLowerCase() as DayOfWeek;
 

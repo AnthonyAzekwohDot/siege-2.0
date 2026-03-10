@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, subDays } from "date-fns";
 
@@ -153,7 +153,6 @@ export default function NutritionPage() {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["daily-log", dateKey], data);
-      queryClient.invalidateQueries({ queryKey: ["daily-log", dateKey] });
     },
   });
 
@@ -161,7 +160,6 @@ export default function NutritionPage() {
     mutationFn: (meal) => queries.addMeal(dateKey, meal),
     onSuccess: (data) => {
       queryClient.setQueryData(["daily-log", dateKey], data);
-      queryClient.invalidateQueries({ queryKey: ["daily-log", dateKey] });
     },
   });
 
@@ -189,12 +187,29 @@ export default function NutritionPage() {
   });
 
   // ---------- Photo flow ----------
+  const [analysisError, setAnalysisError] = useState("");
+  const stageTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      stageTimersRef.current.forEach(clearTimeout);
+    };
+  }, []);
+
   const handlePhotoCapture = useCallback(async (imageBase64: string) => {
     setIsAnalyzing(true);
     setAnalysisStage("Detecting foods...");
+    setAnalysisError("");
+
+    // Clear any prior timers
+    stageTimersRef.current.forEach(clearTimeout);
+    stageTimersRef.current = [
+      setTimeout(() => setAnalysisStage("Estimating portions..."), 1500),
+      setTimeout(() => setAnalysisStage("Calculating calories..."), 3000),
+    ];
+
     try {
-      setTimeout(() => setAnalysisStage("Estimating portions..."), 1500);
-      setTimeout(() => setAnalysisStage("Calculating calories..."), 3000);
       const response = await fetch("/api/analyze-food", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -204,12 +219,16 @@ export default function NutritionPage() {
       if (result.success && result.analysis) {
         setCameraOpen(false);
         setReviewData(result.analysis);
+      } else {
+        setAnalysisError("Could not analyse photo. Try again.");
       }
     } catch {
-      // fail silently
+      setAnalysisError("Photo analysis failed. Try again.");
     } finally {
       setIsAnalyzing(false);
       setAnalysisStage("");
+      stageTimersRef.current.forEach(clearTimeout);
+      stageTimersRef.current = [];
     }
   }, []);
 
@@ -356,7 +375,12 @@ export default function NutritionPage() {
           7-Day Deficit Trend
         </h3>
         <div className="flex items-end gap-1.5 h-24">
-          {weeklyTrend.map((day, i) => {
+          {(() => {
+            const maxDeficit = Math.max(
+              ...weeklyTrend.filter((d) => d.hasData).map((d) => Math.abs(d.deficit)),
+              1
+            );
+            return weeklyTrend.map((day, i) => {
             if (!day.hasData) {
               return (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
@@ -368,10 +392,6 @@ export default function NutritionPage() {
               );
             }
 
-            const maxDeficit = Math.max(
-              ...weeklyTrend.filter((d) => d.hasData).map((d) => Math.abs(d.deficit)),
-              1
-            );
             const heightPct = Math.min(100, (Math.abs(day.deficit) / maxDeficit) * 100);
             const isPositive = day.deficit > 0;
 
@@ -392,7 +412,8 @@ export default function NutritionPage() {
                 </span>
               </div>
             );
-          })}
+          });
+          })()}
         </div>
       </section>
 
@@ -477,10 +498,15 @@ export default function NutritionPage() {
         </button>
       </section>
 
+      {/* ---------- Error feedback ---------- */}
+      {analysisError && (
+        <p className="text-xs text-[hsl(var(--destructive))]">{analysisError}</p>
+      )}
+
       {/* ---------- Action Buttons ---------- */}
       <div className="flex gap-2">
         <button
-          onClick={() => setCameraOpen(true)}
+          onClick={() => { setCameraOpen(true); setAnalysisError(""); }}
           className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] transition-colors hover:opacity-90"
         >
           <Camera className="w-4 h-4" />

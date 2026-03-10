@@ -52,19 +52,30 @@ export async function getOrCreateDailyLog(date: string): Promise<DailyLog> {
   return inserted as DailyLog;
 }
 
+// Fetch current log (row must already exist from page load's getOrCreate)
+async function fetchDailyLog(date: string): Promise<DailyLog> {
+  const { data, error } = await supabase
+    .from("daily_logs")
+    .select("*")
+    .eq("date", date)
+    .single();
+
+  if (error) throw error;
+  return data as DailyLog;
+}
+
 export async function getAllLogs(): Promise<DailyLog[]> {
   const { data, error } = await supabase
     .from("daily_logs")
     .select("*")
-    .order("date", { ascending: false });
+    .order("date", { ascending: false })
+    .limit(365);
 
   if (error) throw error;
   return (data ?? []) as DailyLog[];
 }
 
 export async function updateSteps(date: string, steps: number): Promise<DailyLog> {
-  const log = await getOrCreateDailyLog(date);
-
   const { data, error } = await supabase
     .from("daily_logs")
     .update({ steps })
@@ -80,7 +91,7 @@ export async function updateSteps(date: string, steps: number): Promise<DailyLog
 }
 
 export async function addMeal(date: string, meal: InsertMeal): Promise<DailyLog> {
-  const log = await getOrCreateDailyLog(date);
+  const log = await fetchDailyLog(date);
 
   const newMeal: Meal = {
     id: crypto.randomUUID(),
@@ -108,7 +119,7 @@ export async function addMeal(date: string, meal: InsertMeal): Promise<DailyLog>
 }
 
 export async function deleteMeal(date: string, mealId: string): Promise<DailyLog> {
-  const log = await getOrCreateDailyLog(date);
+  const log = await fetchDailyLog(date);
 
   const updatedMeals = log.meals.filter((m) => m.id !== mealId);
 
@@ -124,7 +135,7 @@ export async function deleteMeal(date: string, mealId: string): Promise<DailyLog
 }
 
 export async function toggleExercise(date: string, exerciseName: string): Promise<DailyLog> {
-  const log = await getOrCreateDailyLog(date);
+  const log = await fetchDailyLog(date);
 
   const isCompleted = log.completed_exercises.includes(exerciseName);
   const updatedExercises = isCompleted
@@ -147,7 +158,7 @@ export async function toggleExercise(date: string, exerciseName: string): Promis
 }
 
 export async function toggleMorningWalk(date: string): Promise<DailyLog> {
-  const log = await getOrCreateDailyLog(date);
+  const log = await fetchDailyLog(date);
   const newValue = !log.morning_walk_completed;
 
   const { data, error } = await supabase
@@ -165,7 +176,7 @@ export async function toggleMorningWalk(date: string): Promise<DailyLog> {
 }
 
 export async function toggleEveningWalk(date: string): Promise<DailyLog> {
-  const log = await getOrCreateDailyLog(date);
+  const log = await fetchDailyLog(date);
   const newValue = !log.evening_walk_completed;
 
   const { data, error } = await supabase
@@ -183,7 +194,7 @@ export async function toggleEveningWalk(date: string): Promise<DailyLog> {
 }
 
 export async function toggleFruit(date: string): Promise<DailyLog> {
-  const log = await getOrCreateDailyLog(date);
+  const log = await fetchDailyLog(date);
 
   const { data, error } = await supabase
     .from("daily_logs")
@@ -197,7 +208,7 @@ export async function toggleFruit(date: string): Promise<DailyLog> {
 }
 
 export async function updateExerciseWeight(date: string, exerciseName: string, weight: number): Promise<DailyLog> {
-  const log = await getOrCreateDailyLog(date);
+  const log = await fetchDailyLog(date);
 
   const updatedWeights = { ...log.exercise_weights, [exerciseName]: weight };
 
@@ -213,8 +224,6 @@ export async function updateExerciseWeight(date: string, exerciseName: string, w
 }
 
 export async function updateWater(date: string, bottles: number): Promise<DailyLog> {
-  await getOrCreateDailyLog(date);
-
   const { data, error } = await supabase
     .from("daily_logs")
     .update({ water_bottles: bottles })
@@ -258,6 +267,17 @@ export async function getOrCreateMindLog(date: string): Promise<MindDailyLog> {
   return inserted as MindDailyLog;
 }
 
+async function fetchMindLog(date: string): Promise<MindDailyLog> {
+  const { data, error } = await supabase
+    .from("mind_logs")
+    .select("*")
+    .eq("date", date)
+    .single();
+
+  if (error) throw error;
+  return data as MindDailyLog;
+}
+
 export async function getAllMindLogs(): Promise<MindDailyLog[]> {
   const { data, error } = await supabase
     .from("mind_logs")
@@ -269,7 +289,7 @@ export async function getAllMindLogs(): Promise<MindDailyLog[]> {
 }
 
 export async function addMindEntry(date: string, entry: { blockId: string; blockTitle: string; category: string; plannedMinutes: number; description?: string }): Promise<MindDailyLog> {
-  const log = await getOrCreateMindLog(date);
+  const log = await fetchMindLog(date);
 
   const newEntry: MindLogEntry = {
     id: crypto.randomUUID(),
@@ -297,7 +317,7 @@ export async function addMindEntry(date: string, entry: { blockId: string; block
 }
 
 export async function updateMindEntry(date: string, entryId: string, update: Partial<MindLogEntry>): Promise<MindDailyLog> {
-  const log = await getOrCreateMindLog(date);
+  const log = await fetchMindLog(date);
 
   const updatedEntries = log.entries.map((e) =>
     e.id === entryId ? { ...e, ...update } : e
@@ -315,8 +335,6 @@ export async function updateMindEntry(date: string, entryId: string, update: Par
 }
 
 export async function startMindTimer(date: string, blockId: string): Promise<MindDailyLog> {
-  await getOrCreateMindLog(date);
-
   const { data, error } = await supabase
     .from("mind_logs")
     .update({
@@ -332,8 +350,6 @@ export async function startMindTimer(date: string, blockId: string): Promise<Min
 }
 
 export async function stopMindTimer(date: string): Promise<MindDailyLog> {
-  await getOrCreateMindLog(date);
-
   const { data, error } = await supabase
     .from("mind_logs")
     .update({
@@ -349,7 +365,7 @@ export async function stopMindTimer(date: string): Promise<MindDailyLog> {
 }
 
 export async function toggleMinimumWinMode(date: string): Promise<MindDailyLog> {
-  const log = await getOrCreateMindLog(date);
+  const log = await fetchMindLog(date);
 
   const { data, error } = await supabase
     .from("mind_logs")
@@ -377,7 +393,7 @@ export async function getUserProfile(): Promise<UserProfile> {
 
   const defaultProfile: UserProfile = {
     id: "default-user",
-    weight_kg: 130,
+    weight_kg: 151,
     height_cm: 183,
     age: 25,
     sex: "male",
@@ -406,8 +422,6 @@ export async function getUserProfile(): Promise<UserProfile> {
 }
 
 export async function updateUserProfile(update: UpdateUserProfile): Promise<UserProfile> {
-  await getUserProfile();
-
   const { data, error } = await supabase
     .from("user_profiles")
     .update({ ...update, updated_at: new Date().toISOString() })
@@ -454,6 +468,17 @@ export async function getOrCreateNutritionSummary(date: string): Promise<DailyNu
   return inserted as DailyNutritionSummary;
 }
 
+async function fetchNutritionSummary(date: string): Promise<DailyNutritionSummary> {
+  const { data, error } = await supabase
+    .from("daily_nutrition_summaries")
+    .select("*")
+    .eq("date", date)
+    .single();
+
+  if (error) throw error;
+  return data as DailyNutritionSummary;
+}
+
 export async function getNutritionSummaries(days: number): Promise<DailyNutritionSummary[]> {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
@@ -470,7 +495,7 @@ export async function getNutritionSummaries(days: number): Promise<DailyNutritio
 }
 
 export async function addExertion(date: string, exertion: InsertExertion): Promise<DailyNutritionSummary> {
-  const summary = await getOrCreateNutritionSummary(date);
+  const summary = await fetchNutritionSummary(date);
 
   const newExertion: ExertionEntry = {
     id: crypto.randomUUID(),
@@ -494,7 +519,7 @@ export async function addExertion(date: string, exertion: InsertExertion): Promi
 }
 
 export async function updateExertion(date: string, exertionId: string, exertion: InsertExertion): Promise<DailyNutritionSummary> {
-  const summary = await getOrCreateNutritionSummary(date);
+  const summary = await fetchNutritionSummary(date);
 
   const updatedExertions = summary.exertions.map((e) =>
     e.id === exertionId
@@ -514,7 +539,7 @@ export async function updateExertion(date: string, exertionId: string, exertion:
 }
 
 export async function deleteExertion(date: string, exertionId: string): Promise<DailyNutritionSummary> {
-  const summary = await getOrCreateNutritionSummary(date);
+  const summary = await fetchNutritionSummary(date);
 
   const updatedExertions = summary.exertions.filter((e) => e.id !== exertionId);
 
@@ -530,6 +555,7 @@ export async function deleteExertion(date: string, exertionId: string): Promise<
 }
 
 export async function syncWorkoutExertion(date: string, label: string, calories: number, isCompleted: boolean): Promise<void> {
+  // Ensure nutrition summary exists (may not if this is the first exertion of the day)
   const summary = await getOrCreateNutritionSummary(date);
 
   const existingIndex = summary.exertions.findIndex((e) => e.label === label);
@@ -568,6 +594,7 @@ export async function syncStepsExertion(date: string, steps: number): Promise<vo
   const calories = Math.round(steps * CALORIES_PER_STEP);
   const label = "Steps";
 
+  // Ensure nutrition summary exists
   const summary = await getOrCreateNutritionSummary(date);
 
   const existingIndex = summary.exertions.findIndex((e) => e.label === label);
@@ -605,8 +632,6 @@ export async function syncStepsExertion(date: string, steps: number): Promise<vo
 // ============ WEIGHT TRACKING ============
 
 export async function logWeight(date: string, weightKg: number): Promise<DailyLog> {
-  await getOrCreateDailyLog(date);
-
   const { data, error } = await supabase
     .from("daily_logs")
     .update({ weight_kg: weightKg })
@@ -665,14 +690,6 @@ async function shouldShowInsight(profile: UserProfile, today: string): Promise<b
   const currentWeekStart = getWeekStart(today);
 
   if (profile.insight_week_start !== currentWeekStart) {
-    await supabase
-      .from("user_profiles")
-      .update({
-        weekly_insight_count: 0,
-        insight_week_start: currentWeekStart,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", "default-user");
     return Math.random() < 0.4;
   }
 
@@ -681,6 +698,7 @@ async function shouldShowInsight(profile: UserProfile, today: string): Promise<b
   return Math.random() < 0.4;
 }
 
+// Generate insight text only — NO side effects. Call markInsightShown separately.
 export async function generateInsight(today: string): Promise<{ message: string; action: string; actionLabel: string } | null> {
   const profile = await getUserProfile();
 
@@ -772,18 +790,29 @@ export async function generateInsight(today: string): Promise<{ message: string;
 
   if (insights.length === 0) return null;
 
-  const chosen = insights[Math.floor(Math.random() * insights.length)];
+  return insights[Math.floor(Math.random() * insights.length)];
+}
+
+// Separate mutation to mark insight as shown — called from the UI, not from the query
+export async function markInsightShown(today: string): Promise<void> {
+  const profile = await getUserProfile();
+  const currentWeekStart = getWeekStart(today);
+
+  const update: Record<string, unknown> = {
+    last_insight_date: today,
+    weekly_insight_count: (profile.weekly_insight_count || 0) + 1,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (profile.insight_week_start !== currentWeekStart) {
+    update.weekly_insight_count = 1;
+    update.insight_week_start = currentWeekStart;
+  }
 
   await supabase
     .from("user_profiles")
-    .update({
-      last_insight_date: today,
-      weekly_insight_count: (profile.weekly_insight_count || 0) + 1,
-      updated_at: new Date().toISOString(),
-    })
+    .update(update)
     .eq("id", "default-user");
-
-  return chosen;
 }
 
 export async function dismissInsight(today: string): Promise<void> {

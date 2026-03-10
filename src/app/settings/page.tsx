@@ -114,7 +114,6 @@ export default function SettingsPage() {
       queries.updateUserProfile(update),
     onSuccess: (data) => {
       queryClient.setQueryData(["user-profile"], data);
-      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
     },
   });
 

@@ -4,8 +4,8 @@
   "description": "We Don't Negotiate With The Plan",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f0f4ff",
-  "theme_color": "#3b82f6",
+  "background_color": "#fafafa",
+  "theme_color": "#3063d9",
   "orientation": "portrait",
   "icons": [
     {

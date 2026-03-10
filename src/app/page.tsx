@@ -27,7 +27,7 @@ import { WaterTracker } from "@/components/dashboard/water-tracker";
 
 export default function DashboardPage() {
   const queryClient = useQueryClient();
-  const today = new Date();
+  const [today] = useState(() => new Date());
   const dateKey = format(today, "yyyy-MM-dd");
   const dayName = format(today, "EEEE");
   const fullDate = format(today, "MMMM d, yyyy");
@@ -50,7 +50,11 @@ export default function DashboardPage() {
 
   const { data: insight } = useQuery({
     queryKey: ["insight", dateKey],
-    queryFn: () => queries.generateInsight(dateKey),
+    queryFn: async () => {
+      const result = await queries.generateInsight(dateKey);
+      if (result) await queries.markInsightShown(dateKey);
+      return result;
+    },
     staleTime: 30 * 60 * 1000,
   });
 
@@ -112,7 +116,6 @@ export default function DashboardPage() {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["daily-log", dateKey], data);
-      queryClient.invalidateQueries({ queryKey: ["daily-log", dateKey] });
     },
   });
 
@@ -149,7 +152,6 @@ export default function DashboardPage() {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["daily-log", dateKey], data);
-      queryClient.invalidateQueries({ queryKey: ["daily-log", dateKey] });
     },
   });
 
@@ -176,7 +178,6 @@ export default function DashboardPage() {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["daily-log", dateKey], data);
-      queryClient.invalidateQueries({ queryKey: ["daily-log", dateKey] });
     },
   });
 
@@ -200,7 +201,6 @@ export default function DashboardPage() {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["daily-log", dateKey], data);
-      queryClient.invalidateQueries({ queryKey: ["daily-log", dateKey] });
     },
   });
 
@@ -224,7 +224,6 @@ export default function DashboardPage() {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["daily-log", dateKey], data);
-      queryClient.invalidateQueries({ queryKey: ["daily-log", dateKey] });
     },
   });
 
@@ -248,7 +247,6 @@ export default function DashboardPage() {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["daily-log", dateKey], data);
-      queryClient.invalidateQueries({ queryKey: ["daily-log", dateKey] });
     },
   });
 
@@ -272,7 +270,6 @@ export default function DashboardPage() {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["daily-log", dateKey], data);
-      queryClient.invalidateQueries({ queryKey: ["daily-log", dateKey] });
     },
   });
 
@@ -296,7 +293,6 @@ export default function DashboardPage() {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["daily-log", dateKey], data);
-      queryClient.invalidateQueries({ queryKey: ["daily-log", dateKey] });
     },
   });
 
@@ -307,10 +303,12 @@ export default function DashboardPage() {
   const [suggestedMealName, setSuggestedMealName] = useState("");
   const [suggestedMealType, setSuggestedMealType] = useState("");
   const [clarificationNeeded, setClarificationNeeded] = useState<{ question: string; options: string[] } | null>(null);
+  const [analysisError, setAnalysisError] = useState("");
 
   const handlePhotoCapture = useCallback(async (imageUri: string) => {
     setIsAnalyzing(true);
     setAnalysisStage("Analyzing...");
+    setAnalysisError("");
     try {
       const response = await fetch("/api/analyze-food", {
         method: "POST",
@@ -322,12 +320,14 @@ export default function DashboardPage() {
         setReviewData(result.analysis);
         setSuggestedMealName(result.suggestedMealName ?? "Detected meal");
         setSuggestedMealType(result.suggestedMealType ?? "meal");
+        setClarificationNeeded(null);
+        setCameraOpen(false);
+        setReviewOpen(true);
+      } else {
+        setAnalysisError("Could not analyse photo. Try again.");
       }
-      setClarificationNeeded(null);
-      setCameraOpen(false);
-      setReviewOpen(true);
     } catch {
-      // Silently fail, user can retry
+      setAnalysisError("Photo analysis failed. Try again.");
     } finally {
       setIsAnalyzing(false);
       setAnalysisStage("");
@@ -510,10 +510,15 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* Error feedback */}
+        {analysisError && (
+          <p className="text-xs text-[hsl(var(--destructive))] mt-2">{analysisError}</p>
+        )}
+
         {/* Action buttons */}
         <div className="flex gap-2 mt-4">
           <button
-            onClick={() => setCameraOpen(true)}
+            onClick={() => { setCameraOpen(true); setAnalysisError(""); }}
             className="flex-1 py-3 rounded-xl text-sm font-semibold bg-[hsl(var(--primary))] text-white active:scale-[0.97] transition-transform"
           >
             Photo Log

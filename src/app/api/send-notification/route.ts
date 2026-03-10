@@ -16,6 +16,12 @@ webPush.setVapidDetails(
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export async function POST(request: NextRequest) {
+  // Auth check
+  const authHeader = request.headers.get("authorization");
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { type, title, body, url } = await request.json();
 
