@@ -1,6 +1,7 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Dumbbell,
@@ -20,7 +21,6 @@ const tabs = [
 
 export function BottomNav() {
   const pathname = usePathname();
-  const router = useRouter();
 
   return (
     <nav className="glass-nav fixed bottom-4 left-0 right-0 z-50 safe-area-bottom">
@@ -30,9 +30,9 @@ export function BottomNav() {
             href === "/" ? pathname === "/" : pathname.startsWith(href);
 
           return (
-            <button
+            <Link
               key={href}
-              onClick={() => router.push(href)}
+              href={href}
               className={cn(
                 "flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all duration-200",
                 isActive
@@ -42,7 +42,7 @@ export function BottomNav() {
             >
               <Icon className="h-[22px] w-[22px]" strokeWidth={isActive ? 2.2 : 1.8} />
               <span className="text-[10px] font-medium">{label}</span>
-            </button>
+            </Link>
           );
         })}
       </div>
