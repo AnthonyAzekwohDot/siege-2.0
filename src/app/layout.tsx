@@ -15,6 +15,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Siege",
   description: "We Don't Negotiate With The Plan",
+  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -40,7 +41,7 @@ export default function RootLayout({
         <Providers>
           <ServiceWorkerRegister />
           <Header />
-          <main className="pt-14 pb-24">{children}</main>
+          <main className="pt-14 pb-24 min-h-[100dvh]">{children}</main>
           <BottomNav />
         </Providers>
       </body>
