@@ -27,95 +27,6 @@ const WORKOUT_FOCUS: Record<number, string> = {
   6: "Optional Light Sculpting or Walk Only",
 };
 
-interface ScheduledNotification {
-  hour: number;
-  minute: number;
-  type: string;
-  title: string;
-  body: string;
-  url: string;
-}
-
-function getScheduledNotifications(dayOfWeek: number): ScheduledNotification[] {
-  const focus = WORKOUT_FOCUS[dayOfWeek] || "Training Day";
-  const isRestDay = [0, 2, 4].includes(dayOfWeek);
-
-  const notifications: ScheduledNotification[] = [
-    {
-      hour: 6,
-      minute: 0,
-      type: "workout",
-      title: "Siege - Today's Mission",
-      body: isRestDay
-        ? `Recovery day. ${focus}. Stay moving.`
-        : `${focus}. Time to build.`,
-      url: "/schedule",
-    },
-    {
-      hour: 7,
-      minute: 0,
-      type: "weigh-in",
-      title: "Siege - Morning Weigh-In",
-      body: "Step on the scale. Track the trend.",
-      url: "/progress",
-    },
-    {
-      hour: 8,
-      minute: 30,
-      type: "meal",
-      title: "Siege - Log Breakfast",
-      body: "First meal of the day. Log it now.",
-      url: "/nutrition",
-    },
-    {
-      hour: 13,
-      minute: 0,
-      type: "meal",
-      title: "Siege - Log Lunch",
-      body: "Midday fuel. Log what you ate.",
-      url: "/nutrition",
-    },
-    {
-      hour: 15,
-      minute: 0,
-      type: "water",
-      title: "Siege - Water Check",
-      body: "How many bottles so far? Stay hydrated.",
-      url: "/",
-    },
-    {
-      hour: 19,
-      minute: 0,
-      type: "meal",
-      title: "Siege - Log Dinner",
-      body: "Last big meal. Log it before you forget.",
-      url: "/nutrition",
-    },
-    {
-      hour: 20,
-      minute: 0,
-      type: "tonight-lock",
-      title: "Siege - Tonight Check-In",
-      body: "Kitchen is closing. How did you do today?",
-      url: "/",
-    },
-  ];
-
-  return notifications;
-}
-
-function isWithinWindow(
-  nowHour: number,
-  nowMinute: number,
-  targetHour: number,
-  targetMinute: number,
-  windowMinutes: number = 30
-): boolean {
-  const nowTotal = nowHour * 60 + nowMinute;
-  const targetTotal = targetHour * 60 + targetMinute;
-  return nowTotal >= targetTotal && nowTotal < targetTotal + windowMinutes;
-}
-
 async function sendToAllSubscriptions(payload: string): Promise<number> {
   const { data: subscriptions, error } = await supabase
     .from("push_subscriptions")
@@ -167,41 +78,40 @@ export async function GET(request: NextRequest) {
   const now = new Date(
     new Date().toLocaleString("en-US", { timeZone: "Africa/Lagos" })
   );
-  const hour = now.getHours();
-  const minute = now.getMinutes();
-  const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ...
+  const dayOfWeek = now.getDay();
+  const focus = WORKOUT_FOCUS[dayOfWeek] || "Training Day";
+  const isRestDay = [0, 2, 4].includes(dayOfWeek);
 
-  const scheduled = getScheduledNotifications(dayOfWeek);
-  const toSend = scheduled.filter((n) =>
-    isWithinWindow(hour, minute, n.hour, n.minute)
-  );
-
-  if (toSend.length === 0) {
-    return NextResponse.json({
-      message: "No notifications due",
-      time: `${hour}:${String(minute).padStart(2, "0")}`,
-      day: dayOfWeek,
-    });
-  }
+  // Daily cron sends morning notifications (workout + weigh-in)
+  // Intra-day reminders (meals, water, tonight lock) are handled client-side
+  const morningNotifications = [
+    {
+      type: "workout",
+      title: "Siege - Today's Mission",
+      body: isRestDay
+        ? `Recovery day. ${focus}. Stay moving.`
+        : `${focus}. Time to build.`,
+      url: "/schedule",
+    },
+    {
+      type: "weigh-in",
+      title: "Siege - Morning Weigh-In",
+      body: "Step on the scale. Track the trend.",
+      url: "/progress",
+    },
+  ];
 
   let totalSent = 0;
 
-  for (const notification of toSend) {
-    const payload = JSON.stringify({
-      type: notification.type,
-      title: notification.title,
-      body: notification.body,
-      url: notification.url,
-    });
-
+  for (const notification of morningNotifications) {
+    const payload = JSON.stringify(notification);
     const sent = await sendToAllSubscriptions(payload);
     totalSent += sent;
   }
 
   return NextResponse.json({
     sent: totalSent,
-    notifications: toSend.map((n) => n.type),
-    time: `${hour}:${String(minute).padStart(2, "0")}`,
+    notifications: morningNotifications.map((n) => n.type),
     day: dayOfWeek,
   });
 }
