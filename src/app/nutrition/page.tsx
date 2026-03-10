@@ -38,7 +38,7 @@ import { MealForm } from "@/components/dashboard/meal-form";
 
 export default function NutritionPage() {
   const queryClient = useQueryClient();
-  const today = new Date();
+  const [today] = useState(() => new Date());
   const dateKey = format(today, "yyyy-MM-dd");
 
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -230,16 +230,16 @@ export default function NutritionPage() {
   // ---------- Loading ----------
   if (logLoading || nutritionLoading || !dailyLog || !nutritionSummary) {
     return (
-      <main className="max-w-2xl mx-auto p-4 pb-32 space-y-4">
+      <div className="max-w-2xl mx-auto p-4 pb-12 space-y-4">
         {[...Array(4)].map((_, i) => (
           <div key={i} className="glass-card p-6 h-28 animate-pulse" />
         ))}
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="max-w-2xl mx-auto p-4 pb-32 space-y-4">
+    <div className="max-w-2xl mx-auto p-4 pb-12 space-y-4">
       {/* ---------- Calorie Deficit Card ---------- */}
       <section className="glass-card p-5">
         <div className="flex items-center justify-between mb-4">
@@ -541,17 +541,14 @@ export default function NutritionPage() {
         suggestedMealName="Meal"
         suggestedMealType="lunch"
         clarificationNeeded={null}
-        onConfirm={() => {
-          if (reviewData) {
-            const totalCalories = reviewData.detectedItems.reduce((sum, item) => sum + item.calories, 0);
-            addMealMutation.mutate({
-              name: reviewData.detectedItems.map(i => i.name).join(" + "),
-              calories: totalCalories,
-              source: "photo_ai",
-              photoAnalysis: reviewData,
-            });
-            setReviewData(null);
-          }
+        onConfirm={(items, totalCal) => {
+          addMealMutation.mutate({
+            name: items.map(i => i.name).join(" + ") || "Meal",
+            calories: totalCal,
+            source: "photo_ai",
+            photoAnalysis: { detectedItems: items, totalCalories: totalCal, estimationQualityScore: reviewData?.estimationQualityScore ?? 0.5 },
+          });
+          setReviewData(null);
         }}
         onRetake={() => {
           setReviewData(null);
@@ -568,6 +565,6 @@ export default function NutritionPage() {
         }}
         isPending={addMealMutation.isPending}
       />
-    </main>
+    </div>
   );
 }

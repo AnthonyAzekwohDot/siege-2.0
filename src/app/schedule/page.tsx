@@ -307,17 +307,17 @@ export default function SchedulePage() {
   // Loading
   if (isLoading || !dailyLog) {
     return (
-      <main className="max-w-2xl mx-auto p-4 pb-32 space-y-4">
+      <div className="max-w-2xl mx-auto p-4 pb-12 space-y-4">
         <div className="h-16 bg-[hsl(var(--muted))] rounded-xl animate-pulse" />
         {[...Array(3)].map((_, i) => (
           <div key={i} className="glass-card p-6 h-24 animate-pulse" />
         ))}
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="max-w-2xl mx-auto p-4 pb-32 space-y-4">
+    <div className="max-w-2xl mx-auto p-4 pb-12 space-y-4">
       {/* ---------- Week Overview ---------- */}
       <WeekOverview selectedDay={selectedDay} onSelectDay={setSelectedDay} />
 
@@ -465,6 +465,6 @@ export default function SchedulePage() {
           )}
         </div>
       )}
-    </main>
+    </div>
   );
 }

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 interface StepInputProps {
   currentSteps: number;
   onSubmit: (steps: number) => void;
+  onCancel?: () => void;
   isPending: boolean;
   className?: string;
 }
@@ -15,6 +16,7 @@ interface StepInputProps {
 export function StepInput({
   currentSteps,
   onSubmit,
+  onCancel,
   isPending,
   className,
 }: StepInputProps) {
@@ -46,6 +48,11 @@ export function StepInput({
       <Button type="submit" size="sm" disabled={isPending || !value}>
         {isPending ? "..." : "Update"}
       </Button>
+      {onCancel && (
+        <Button type="button" size="sm" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+      )}
     </form>
   );
 }

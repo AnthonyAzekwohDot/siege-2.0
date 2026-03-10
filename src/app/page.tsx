@@ -313,12 +313,14 @@ export default function DashboardPage() {
       const response = await fetch("/api/analyze-food", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUri }),
+        body: JSON.stringify({ imageBase64: imageUri }),
       });
-      const analysis: PhotoAnalysis = await response.json();
-      setReviewData(analysis);
-      setSuggestedMealName(analysis.detectedItems?.[0]?.name ?? "Detected meal");
-      setSuggestedMealType("meal");
+      const result = await response.json();
+      if (result.success && result.analysis) {
+        setReviewData(result.analysis);
+        setSuggestedMealName(result.suggestedMealName ?? "Detected meal");
+        setSuggestedMealType(result.suggestedMealType ?? "meal");
+      }
       setClarificationNeeded(null);
       setCameraOpen(false);
       setReviewOpen(true);
@@ -330,15 +332,13 @@ export default function DashboardPage() {
     }
   }, []);
 
-  const handleReviewConfirm = useCallback(() => {
-    if (reviewData) {
-      addMealMutation.mutate({
-        name: suggestedMealName || "Unknown meal",
-        calories: reviewData.totalCalories ?? 0,
-        source: "photo_ai",
-        photoAnalysis: reviewData,
-      });
-    }
+  const handleReviewConfirm = useCallback((items: import("@/lib/types").DetectedFoodItem[], totalCal: number) => {
+    addMealMutation.mutate({
+      name: suggestedMealName || items.map(i => i.name).join(" + ") || "Unknown meal",
+      calories: totalCal,
+      source: "photo_ai",
+      photoAnalysis: { detectedItems: items, totalCalories: totalCal, estimationQualityScore: reviewData?.estimationQualityScore ?? 0.5 },
+    });
     setReviewOpen(false);
     setReviewData(null);
   }, [addMealMutation, reviewData, suggestedMealName]);
@@ -362,7 +362,7 @@ export default function DashboardPage() {
   // ---------- Loading skeleton ----------
   if (logLoading || !dailyLog) {
     return (
-      <main className="max-w-2xl mx-auto p-4 pb-32 space-y-4">
+      <div className="max-w-2xl mx-auto p-4 pb-12 space-y-4">
         <div className="space-y-2">
           <div className="h-6 w-32 bg-[hsl(var(--muted))] rounded animate-pulse" />
           <div className="h-4 w-48 bg-[hsl(var(--muted))] rounded animate-pulse" />
@@ -373,12 +373,12 @@ export default function DashboardPage() {
             className="glass-card p-6 h-32 animate-pulse"
           />
         ))}
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="max-w-2xl mx-auto p-4 pb-32 space-y-4">
+    <div className="max-w-2xl mx-auto p-4 pb-12 space-y-4">
       {/* ---------- Date Header ---------- */}
       <div>
         <h2 className="text-2xl font-bold text-[hsl(var(--foreground))]">
@@ -443,6 +443,7 @@ export default function DashboardPage() {
         <StepInput
           currentSteps={dailyLog.steps}
           onSubmit={handleStepSubmit}
+          onCancel={() => setStepInputOpen(false)}
           isPending={updateStepsMutation.isPending}
         />
       )}
@@ -591,6 +592,6 @@ export default function DashboardPage() {
           onUpdateWeight={(name, weight) => updateWeightMutation.mutate({ name, weight })}
         />
       )}
-    </main>
+    </div>
   );
 }

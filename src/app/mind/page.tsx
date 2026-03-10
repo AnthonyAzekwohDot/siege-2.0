@@ -470,16 +470,16 @@ export default function MindPage() {
   // ---------- Loading ----------
   if (isLoading || !mindLog) {
     return (
-      <main className="max-w-2xl mx-auto p-4 pb-32 space-y-4">
+      <div className="max-w-2xl mx-auto p-4 pb-12 space-y-4">
         {[...Array(4)].map((_, i) => (
           <div key={i} className="glass-card p-6 h-24 animate-pulse" />
         ))}
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="max-w-2xl mx-auto p-4 pb-32 space-y-4">
+    <div className="max-w-2xl mx-auto p-4 pb-12 space-y-4">
       {/* ---------- Header ---------- */}
       <div className="flex items-center justify-between">
         <div>
@@ -694,6 +694,6 @@ export default function MindPage() {
           onClose={() => setCompletingBlock(null)}
         />
       )}
-    </main>
+    </div>
   );
 }

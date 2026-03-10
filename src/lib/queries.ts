@@ -280,7 +280,7 @@ export async function addMindEntry(date: string, entry: { blockId: string; block
     plannedMinutes: entry.plannedMinutes,
     actualMinutes: 0,
     status: "pending",
-    completedAt: new Date().toISOString(),
+    completedAt: undefined,
   };
 
   const updatedEntries = [...log.entries, newEntry];

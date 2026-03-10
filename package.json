@@ -9,33 +9,32 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5",
+    "@supabase/ssr": "^0.6",
+    "@supabase/supabase-js": "^2",
+    "@tanstack/react-query": "^5",
+    "class-variance-authority": "^0.7",
+    "clsx": "^2",
+    "date-fns": "^3",
+    "lucide-react": "^0.453",
     "next": "^16",
+    "next-pwa": "^5",
+    "openai": "^4",
     "react": "^19",
     "react-dom": "^19",
-    "@supabase/supabase-js": "^2",
-    "@supabase/ssr": "^0.6",
-    "@tanstack/react-query": "^5",
     "react-hook-form": "^7",
-    "@hookform/resolvers": "^5",
-    "zod": "^3",
-    "lucide-react": "^0.453",
     "recharts": "^2",
-    "framer-motion": "^11",
-    "date-fns": "^3",
-    "clsx": "^2",
     "tailwind-merge": "^2",
-    "class-variance-authority": "^0.7",
-    "openai": "^4",
-    "next-pwa": "^5"
+    "zod": "^3"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "tailwindcss": "^4",
-    "@tailwindcss/postcss": "^4",
     "eslint": "^9",
-    "eslint-config-next": "^16"
+    "eslint-config-next": "^16",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }

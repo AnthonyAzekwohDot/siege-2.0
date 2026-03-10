@@ -25,7 +25,7 @@ interface FoodReviewSheetProps {
     question: string;
     options: string[];
   } | null;
-  onConfirm: () => void;
+  onConfirm: (items: DetectedFoodItem[], totalCalories: number) => void;
   onRetake: () => void;
 }
 
@@ -196,7 +196,7 @@ export function FoodReviewSheet({
           <Button variant="outline" onClick={onRetake}>
             Retake
           </Button>
-          <Button onClick={onConfirm} className="gap-1.5">
+          <Button onClick={() => onConfirm(editedItems, totalCalories)} className="gap-1.5">
             <Check className="h-4 w-4" />
             Confirm
           </Button>

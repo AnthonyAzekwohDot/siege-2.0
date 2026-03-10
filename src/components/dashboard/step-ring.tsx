@@ -24,12 +24,12 @@ export function StepRing({ current, goal, className }: StepRingProps) {
   return (
     <div
       className={cn(
-        "relative flex items-center justify-center w-48 h-48",
+        "relative flex items-center justify-center w-32 h-32 sm:w-48 sm:h-48",
         className
       )}
     >
       <svg
-        className="w-48 h-48 -rotate-90"
+        className="w-full h-full -rotate-90"
         viewBox="0 0 192 192"
       >
         {/* Background circle */}

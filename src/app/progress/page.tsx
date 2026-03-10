@@ -80,10 +80,10 @@ function getActivityLevel(log: DailyLog): number {
 
 const ACTIVITY_COLORS = [
   "bg-[hsl(var(--muted))]",
-  "bg-[hsl(var(--chart-3))/0.2]",
-  "bg-[hsl(var(--chart-3))/0.4]",
-  "bg-[hsl(var(--chart-3))/0.6]",
-  "bg-[hsl(var(--chart-3))/0.8]",
+  "bg-[hsl(var(--chart-3))]/20",
+  "bg-[hsl(var(--chart-3))]/40",
+  "bg-[hsl(var(--chart-3))]/60",
+  "bg-[hsl(var(--chart-3))]/80",
   "bg-[hsl(var(--chart-3))]",
 ];
 
@@ -302,16 +302,16 @@ export default function ProgressPage() {
   // ---------- Loading ----------
   if (isLoading) {
     return (
-      <main className="max-w-2xl mx-auto p-4 pb-32 space-y-4">
+      <div className="max-w-2xl mx-auto p-4 pb-12 space-y-4">
         {[...Array(5)].map((_, i) => (
           <div key={i} className="glass-card p-6 h-24 animate-pulse" />
         ))}
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="max-w-2xl mx-auto p-4 pb-32 space-y-4">
+    <div className="max-w-2xl mx-auto p-4 pb-12 space-y-4">
       {/* ---------- Header ---------- */}
       <div>
         <h2 className="text-2xl font-bold text-[hsl(var(--foreground))]">
@@ -484,6 +484,6 @@ export default function ProgressPage() {
           </p>
         </div>
       )}
-    </main>
+    </div>
   );
 }

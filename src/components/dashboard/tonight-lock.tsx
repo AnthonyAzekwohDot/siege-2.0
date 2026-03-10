@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -12,95 +12,73 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Moon, Utensils, Footprints } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-
-interface TonightLockMeal {
-  id: string;
-  name: string;
-  calories: number;
-}
-
-interface TonightLockWalk {
-  id: string;
-  name: string;
-  calories: number;
-}
-
-interface TonightLockData {
-  remainingCalories: number;
-  inDeficit: boolean;
-  safeMeals: TonightLockMeal[];
-  walkPresets: TonightLockWalk[];
-  locked: boolean;
-}
+import * as queries from "@/lib/queries";
+import {
+  calculateBMR,
+  calculateTDEE,
+  calculateDailyBudget,
+} from "@/lib/calculations";
+import type { InsertMeal } from "@/lib/types";
 
 export function TonightLock() {
   const [open, setOpen] = React.useState(false);
   const queryClient = useQueryClient();
+  const dateKey = format(new Date(), "yyyy-MM-dd");
 
-  const { data } = useQuery<TonightLockData>({
-    queryKey: ["tonight-lock"],
-    queryFn: async () => {
-      const res = await fetch("/api/tonight-lock");
-      if (!res.ok) throw new Error("Failed to fetch tonight lock data");
-      return res.json();
-    },
-    refetchInterval: 60_000,
+  const { data: dailyLog } = useQuery({
+    queryKey: ["daily-log", dateKey],
+    queryFn: () => queries.getOrCreateDailyLog(dateKey),
   });
 
-  const logMealMutation = useMutation({
-    mutationFn: async (meal: TonightLockMeal) => {
-      const res = await fetch("/api/meals", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: meal.name,
-          calories: meal.calories,
-          source: "manual",
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to log meal");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tonight-lock"] });
-      queryClient.invalidateQueries({ queryKey: ["daily-log"] });
-    },
+  const { data: userProfile } = useQuery({
+    queryKey: ["user-profile"],
+    queryFn: () => queries.getUserProfile(),
   });
 
-  const logWalkMutation = useMutation({
-    mutationFn: async (walk: TonightLockWalk) => {
-      const res = await fetch("/api/exertions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          label: walk.name,
-          calories: walk.calories,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to log walk");
-      return res.json();
-    },
+  const { data: nutritionSummary } = useQuery({
+    queryKey: ["nutrition-summary", dateKey],
+    queryFn: () => queries.getOrCreateNutritionSummary(dateKey),
+  });
+
+  const derived = React.useMemo(() => {
+    if (!dailyLog || !userProfile || !nutritionSummary) return null;
+
+    const bmr = calculateBMR(userProfile.weight_kg, userProfile.height_cm, userProfile.age, userProfile.sex);
+    const tdee = calculateTDEE(bmr, userProfile.activity_level);
+    const totalExerted = nutritionSummary.exertions.reduce((s, e) => s + e.calories, 0);
+    const budget = calculateDailyBudget(tdee, userProfile.deficit_target, totalExerted);
+    const totalEaten = dailyLog.meals.reduce((s, m) => s + m.calories, 0);
+    const remaining = budget - totalEaten;
+
+    return {
+      remainingCalories: remaining,
+      inDeficit: remaining > 0,
+      safeMeals: userProfile.safe_meals ?? [],
+      walkPresets: userProfile.walk_presets ?? [],
+    };
+  }, [dailyLog, userProfile, nutritionSummary]);
+
+  const addMealMutation = useMutation({
+    mutationFn: (meal: InsertMeal) => queries.addMeal(dateKey, meal),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tonight-lock"] });
-      queryClient.invalidateQueries({ queryKey: ["daily-log"] });
+      queryClient.invalidateQueries({ queryKey: ["daily-log", dateKey] });
     },
   });
 
   // Auto-show after 8pm
   React.useEffect(() => {
     const check = () => {
-      const now = new Date();
-      const hour = now.getHours();
-      if (hour >= 20 && data && !data.locked) {
+      const hour = new Date().getHours();
+      if (hour >= 20 && derived) {
         setOpen(true);
       }
     };
     check();
     const interval = setInterval(check, 60_000);
     return () => clearInterval(interval);
-  }, [data]);
+  }, [derived]);
 
-  if (!data) return null;
+  if (!derived) return null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -113,36 +91,40 @@ export function TonightLock() {
         </DialogHeader>
 
         <div className="space-y-5 pt-2">
-          {/* Remaining calories */}
           <div className="text-center space-y-1">
             <p className="text-3xl font-bold text-[hsl(var(--foreground))]">
-              {data.remainingCalories}
+              {derived.remainingCalories}
             </p>
             <p className="text-sm text-[hsl(var(--muted-foreground))]">
               calories remaining
             </p>
-            {data.inDeficit ? (
+            {derived.inDeficit ? (
               <Badge className="bg-green-500 text-white">On track</Badge>
             ) : (
               <Badge variant="destructive">Over budget</Badge>
             )}
           </div>
 
-          {/* Safe meals */}
-          {data.safeMeals.length > 0 && (
+          {derived.safeMeals.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wide flex items-center gap-1.5">
                 <Utensils className="h-3 w-3" />
                 Safe meals
               </p>
               <div className="flex flex-wrap gap-2">
-                {data.safeMeals.map((meal) => (
+                {derived.safeMeals.map((meal) => (
                   <Button
                     key={meal.id}
                     variant="outline"
                     size="sm"
-                    disabled={logMealMutation.isPending}
-                    onClick={() => logMealMutation.mutate(meal)}
+                    disabled={addMealMutation.isPending}
+                    onClick={() =>
+                      addMealMutation.mutate({
+                        name: meal.name,
+                        calories: meal.calories,
+                        source: "manual",
+                      })
+                    }
                   >
                     {meal.name} ({meal.calories})
                   </Button>
@@ -151,21 +133,19 @@ export function TonightLock() {
             </div>
           )}
 
-          {/* Walk presets */}
-          {data.walkPresets.length > 0 && (
+          {derived.walkPresets.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wide flex items-center gap-1.5">
                 <Footprints className="h-3 w-3" />
                 Quick walks
               </p>
               <div className="flex flex-wrap gap-2">
-                {data.walkPresets.map((walk) => (
+                {derived.walkPresets.map((walk) => (
                   <Button
                     key={walk.id}
                     variant="outline"
                     size="sm"
-                    disabled={logWalkMutation.isPending}
-                    onClick={() => logWalkMutation.mutate(walk)}
+                    disabled={addMealMutation.isPending}
                   >
                     {walk.name} (-{walk.calories} cal)
                   </Button>

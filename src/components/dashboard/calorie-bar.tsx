@@ -16,7 +16,7 @@ export function CalorieBar({
   fruitEaten,
   className,
 }: CalorieBarProps) {
-  const percentage = (consumed / goal) * 100;
+  const percentage = goal > 0 ? (consumed / goal) * 100 : 0;
 
   const getBarColor = () => {
     if (percentage > 100) return "bg-red-500";
