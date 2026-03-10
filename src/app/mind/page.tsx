@@ -780,25 +780,25 @@ export default function MindPage() {
                     <button
                       onClick={() => handleStartTimer(block)}
                       disabled={!!mindLog.active_block_id && mindLog.active_block_id !== block.id}
-                      className="p-2 rounded-lg bg-[hsl(var(--primary))] text-white hover:opacity-90 transition-colors disabled:opacity-40"
+                      className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-[hsl(var(--primary))] text-white hover:opacity-90 transition-colors disabled:opacity-40"
                     >
-                      <Play className="w-3.5 h-3.5" />
+                      <Play className="w-4 h-4" />
                     </button>
                   )}
                   {isActive && (
-                    <button onClick={handleStopTimer} className="p-2 rounded-lg bg-[hsl(var(--destructive))] text-white hover:opacity-90 transition-colors">
-                      <Square className="w-3.5 h-3.5" />
+                    <button onClick={handleStopTimer} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-[hsl(var(--destructive))] text-white hover:opacity-90 transition-colors">
+                      <Square className="w-4 h-4" />
                     </button>
                   )}
                   <button
                     onClick={() => setCompletingBlock(block)}
-                    className={`p-2 rounded-lg transition-colors ${
+                    className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors ${
                       isCompleted
                         ? "bg-[hsl(var(--chart-3))/0.15] text-[hsl(var(--chart-3))]"
                         : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
                     }`}
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <CheckCircle2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
