@@ -139,87 +139,194 @@ function FundamentalChips({
 
 // ---------- Fundamentals Coverage ----------
 
-function FundamentalsCoverage({ allLogs }: { allLogs: MindDailyLog[] }) {
-  const coverage = useMemo(() => {
-    const counts: Record<Fundamental, number> = {} as Record<Fundamental, number>;
-    const lastPracticed: Record<Fundamental, string> = {} as Record<Fundamental, string>;
+const CATEGORIES_2D: MindCategory[] = ["drawing", "painting", "master-study", "experimentation"];
+const CATEGORIES_3D: MindCategory[] = ["sculpture"];
 
-    for (const f of FUNDAMENTALS) {
-      counts[f] = 0;
-      lastPracticed[f] = "";
-    }
+type CoverageItem = {
+  fundamental: Fundamental;
+  label: string;
+  count: number;
+  intensity: number;
+  daysSince: number;
+};
 
-    // Count sessions per fundamental across last 30 days
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 30);
-    const cutoffStr = format(cutoff, "yyyy-MM-dd");
+function computeCoverage(
+  allLogs: MindDailyLog[],
+  categoryFilter: MindCategory[],
+  fundamentalsList: Fundamental[],
+): CoverageItem[] {
+  const counts: Record<string, number> = {};
+  const lastPracticed: Record<string, string> = {};
 
-    for (const log of allLogs) {
-      if (log.date < cutoffStr) continue;
-      for (const entry of log.entries) {
-        if (entry.fundamentals) {
-          for (const f of entry.fundamentals) {
-            counts[f] = (counts[f] || 0) + 1;
-            if (!lastPracticed[f] || log.date > lastPracticed[f]) {
-              lastPracticed[f] = log.date;
-            }
+  for (const f of fundamentalsList) {
+    counts[f] = 0;
+    lastPracticed[f] = "";
+  }
+
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 30);
+  const cutoffStr = format(cutoff, "yyyy-MM-dd");
+
+  for (const log of allLogs) {
+    if (log.date < cutoffStr) continue;
+    for (const entry of log.entries) {
+      if (!categoryFilter.includes(entry.category)) continue;
+      if (entry.fundamentals) {
+        for (const f of entry.fundamentals) {
+          if (!fundamentalsList.includes(f)) continue;
+          counts[f] = (counts[f] || 0) + 1;
+          if (!lastPracticed[f] || log.date > lastPracticed[f]) {
+            lastPracticed[f] = log.date;
           }
         }
       }
     }
+  }
 
-    const maxCount = Math.max(...Object.values(counts), 1);
+  const maxCount = Math.max(...Object.values(counts), 1);
 
-    return FUNDAMENTALS.map((f) => ({
-      fundamental: f,
-      label: FUNDAMENTAL_LABELS[f],
-      count: counts[f],
-      intensity: counts[f] / maxCount,
-      lastPracticed: lastPracticed[f],
-      daysSince: lastPracticed[f]
-        ? Math.floor((Date.now() - new Date(lastPracticed[f] + "T12:00:00").getTime()) / 86400000)
-        : 999,
-    })).sort((a, b) => a.daysSince - b.daysSince);
-  }, [allLogs]);
+  return fundamentalsList.map((f) => ({
+    fundamental: f,
+    label: FUNDAMENTAL_LABELS[f],
+    count: counts[f],
+    intensity: counts[f] / maxCount,
+    daysSince: lastPracticed[f]
+      ? Math.floor((Date.now() - new Date(lastPracticed[f] + "T12:00:00").getTime()) / 86400000)
+      : 999,
+  }));
+}
+
+function CoverageRow({ item, colorVar, onTap }: { item: CoverageItem; colorVar: string; onTap?: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onTap}
+      className="flex items-center gap-2 py-1.5 w-full text-left touch-manipulation active:bg-[hsl(var(--muted))/0.5] rounded transition-colors"
+    >
+      <div className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: item.count > 0 ? `hsl(var(--${colorVar}) / ${0.2 + item.intensity * 0.8})` : "hsl(var(--muted))" }} />
+      <span className="text-xs text-[hsl(var(--foreground))] flex-1">{item.label}</span>
+      <span className={`text-[10px] font-medium ${item.daysSince > 7 ? "text-[hsl(var(--destructive))]" : item.daysSince > 3 ? "text-[hsl(var(--chart-4))]" : "text-[hsl(var(--muted-foreground))]"}`}>
+        {item.count === 0 ? "never" : item.daysSince === 0 ? "today" : `${item.daysSince}d ago`}
+      </span>
+      <span className="text-[10px] text-[hsl(var(--muted-foreground))] w-6 text-right">{item.count}x</span>
+    </button>
+  );
+}
+
+function FundamentalsCoverage({ allLogs, onLogFundamental }: { allLogs: MindDailyLog[]; onLogFundamental: (fundamental: Fundamental, category: MindCategory) => void }) {
+  const drawing2D = useMemo(() => computeCoverage(allLogs, CATEGORIES_2D, DRAWING_FUNDAMENTALS), [allLogs]);
+  const painting2D = useMemo(() => computeCoverage(allLogs, CATEGORIES_2D, PAINTING_FUNDAMENTALS), [allLogs]);
+  const drawing3D = useMemo(() => computeCoverage(allLogs, CATEGORIES_3D, DRAWING_FUNDAMENTALS), [allLogs]);
 
   return (
     <section className="glass-card p-5">
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-4">
         <Crosshair className="w-4 h-4 text-[hsl(var(--primary))]" />
         <h3 className="text-sm font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
           Fundamentals (30 days)
         </h3>
       </div>
-      {/* Drawing Skills */}
-      <p className="text-[10px] font-bold uppercase tracking-widest text-[hsl(var(--chart-1))] mt-1 mb-1">Drawing Skills</p>
-      <div className="space-y-0.5 mb-3">
-        {coverage.filter((c) => DRAWING_FUNDAMENTALS.includes(c.fundamental)).map(({ fundamental, label, count, intensity, daysSince }) => (
-          <div key={fundamental} className="flex items-center gap-2 py-1">
-            <div className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: count > 0 ? `hsl(var(--chart-1) / ${0.2 + intensity * 0.8})` : "hsl(var(--muted))" }} />
-            <span className="text-xs text-[hsl(var(--foreground))] flex-1">{label}</span>
-            <span className={`text-[10px] font-medium ${daysSince > 7 ? "text-[hsl(var(--destructive))]" : daysSince > 3 ? "text-[hsl(var(--chart-4))]" : "text-[hsl(var(--muted-foreground))]"}`}>
-              {count === 0 ? "never" : daysSince === 0 ? "today" : `${daysSince}d ago`}
-            </span>
-            <span className="text-[10px] text-[hsl(var(--muted-foreground))] w-6 text-right">{count}x</span>
-          </div>
-        ))}
-      </div>
 
-      {/* Painting Skills */}
-      <p className="text-[10px] font-bold uppercase tracking-widest text-[hsl(var(--chart-2))] mb-1">Painting Skills</p>
-      <div className="space-y-0.5">
-        {coverage.filter((c) => PAINTING_FUNDAMENTALS.includes(c.fundamental)).map(({ fundamental, label, count, intensity, daysSince }) => (
-          <div key={fundamental} className="flex items-center gap-2 py-1">
-            <div className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: count > 0 ? `hsl(var(--chart-2) / ${0.2 + intensity * 0.8})` : "hsl(var(--muted))" }} />
-            <span className="text-xs text-[hsl(var(--foreground))] flex-1">{label}</span>
-            <span className={`text-[10px] font-medium ${daysSince > 7 ? "text-[hsl(var(--destructive))]" : daysSince > 3 ? "text-[hsl(var(--chart-4))]" : "text-[hsl(var(--muted-foreground))]"}`}>
-              {count === 0 ? "never" : daysSince === 0 ? "today" : `${daysSince}d ago`}
-            </span>
-            <span className="text-[10px] text-[hsl(var(--muted-foreground))] w-6 text-right">{count}x</span>
+      <div className="grid grid-cols-2 gap-4">
+        {/* 2D Column */}
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[hsl(var(--chart-1))] mb-1.5">2D</p>
+          <p className="text-[9px] font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1">Drawing</p>
+          <div className="space-y-0.5 mb-2">
+            {drawing2D.map((item) => <CoverageRow key={item.fundamental} item={item} colorVar="chart-1" onTap={() => onLogFundamental(item.fundamental, "drawing")} />)}
           </div>
-        ))}
+          <p className="text-[9px] font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1">Painting</p>
+          <div className="space-y-0.5">
+            {painting2D.map((item) => <CoverageRow key={item.fundamental} item={item} colorVar="chart-2" onTap={() => onLogFundamental(item.fundamental, "painting")} />)}
+          </div>
+        </div>
+
+        {/* 3D Column */}
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[hsl(var(--chart-3))] mb-1.5">3D</p>
+          <p className="text-[9px] font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1">Sculpture</p>
+          <div className="space-y-0.5">
+            {drawing3D.map((item) => <CoverageRow key={`3d-${item.fundamental}`} item={item} colorVar="chart-3" onTap={() => onLogFundamental(item.fundamental, "sculpture")} />)}
+          </div>
+        </div>
       </div>
     </section>
+  );
+}
+
+// ---------- Quick Fundamental Log ----------
+
+function QuickFundamentalLog({
+  fundamental,
+  category,
+  onSubmit,
+  onClose,
+}: {
+  fundamental: Fundamental;
+  category: MindCategory;
+  onSubmit: (data: { minutes: number; stretchLevel: StretchLevel; note: string }) => void;
+  onClose: () => void;
+}) {
+  const [minutes, setMinutes] = useState(30);
+  const [stretchLevel, setStretchLevel] = useState<StretchLevel>("stretch");
+  const [note, setNote] = useState("");
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40">
+      <div className="w-full max-w-2xl bg-[hsl(var(--card))] rounded-t-2xl p-5 space-y-4 max-h-[70dvh] overflow-y-auto">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold text-[hsl(var(--foreground))]">{FUNDAMENTAL_LABELS[fundamental]}</h3>
+            <p className="text-xs text-[hsl(var(--muted-foreground))] capitalize">{category} practice</p>
+          </div>
+          <button onClick={onClose} className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]">
+            <XCircle className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold uppercase text-[hsl(var(--muted-foreground))] mb-2">Minutes</p>
+          <div className="flex gap-2">
+            {[15, 30, 45, 60, 90].map((m) => (
+              <button
+                key={m}
+                onClick={() => setMinutes(m)}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  minutes === m
+                    ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
+                    : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"
+                }`}
+              >
+                {m}m
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold uppercase text-[hsl(var(--muted-foreground))] mb-2">Push Level</p>
+          <StretchSelector value={stretchLevel} onChange={setStretchLevel} />
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold uppercase text-[hsl(var(--muted-foreground))] mb-2">Note (optional)</p>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={2}
+            placeholder="What did you drill?"
+            className="w-full px-3 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] text-sm resize-none"
+          />
+        </div>
+
+        <button
+          onClick={() => onSubmit({ minutes, stretchLevel, note })}
+          className="w-full py-3 rounded-xl text-sm font-semibold bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] transition-colors hover:opacity-90"
+        >
+          Log Practice
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -440,11 +547,16 @@ function CompletionDialog({
 
 export default function MindPage() {
   const queryClient = useQueryClient();
+  const [mounted, setMounted] = useState(false);
   const [today] = useState(() => new Date());
   const dateKey = format(today, "yyyy-MM-dd");
   const dayOfWeek = format(today, "EEEE").toLowerCase() as DayOfWeek;
 
+  // Hydration guard — avoid mismatch between build-time HTML and runtime JS
+  useEffect(() => { setMounted(true); }, []);
+
   const [completingBlock, setCompletingBlock] = useState<MindBlock | null>(null);
+  const [quickLogTarget, setQuickLogTarget] = useState<{ fundamental: Fundamental; category: MindCategory } | null>(null);
 
   // ---------- Queries ----------
   const { data: mindLog, isLoading } = useQuery({
@@ -594,6 +706,38 @@ export default function MindPage() {
     [getEntryForBlock, updateEntryMutation, addEntryMutation]
   );
 
+  // ---------- Quick fundamental log handler ----------
+  const handleQuickFundamentalLog = useCallback(
+    (fundamental: Fundamental, category: MindCategory, data: { minutes: number; stretchLevel: StretchLevel; note: string }) => {
+      const blockId = `quick-${fundamental}-${dateKey}`;
+      const blockTitle = `${FUNDAMENTAL_LABELS[fundamental]} Practice`;
+
+      addEntryMutation.mutate(
+        { blockId, blockTitle, category, plannedMinutes: data.minutes },
+        {
+          onSuccess: (log) => {
+            const newEntry = log.entries.find((e) => e.blockId === blockId);
+            if (newEntry) {
+              updateEntryMutation.mutate({
+                entryId: newEntry.id,
+                update: {
+                  status: "done",
+                  actualMinutes: data.minutes,
+                  fundamentals: [fundamental],
+                  stretchLevel: data.stretchLevel,
+                  note: data.note || undefined,
+                  completedAt: new Date().toISOString(),
+                },
+              });
+            }
+          },
+        }
+      );
+      setQuickLogTarget(null);
+    },
+    [dateKey, addEntryMutation, updateEntryMutation]
+  );
+
   // ---------- Timer handlers ----------
   const handleStartTimer = useCallback(
     (block: MindBlock) => {
@@ -613,7 +757,7 @@ export default function MindPage() {
   const handleStopTimer = useCallback(() => { stopTimerMutation.mutate(); }, [stopTimerMutation]);
 
   // ---------- Loading ----------
-  if (isLoading || !mindLog) {
+  if (!mounted || isLoading || !mindLog) {
     return (
       <div className="max-w-2xl mx-auto p-4 pb-12 space-y-4">
         {[...Array(4)].map((_, i) => (
@@ -775,30 +919,36 @@ export default function MindPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2 shrink-0">
                   {!isActive && !isCompleted && (
                     <button
-                      onClick={() => handleStartTimer(block)}
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleStartTimer(block); }}
                       disabled={!!mindLog.active_block_id && mindLog.active_block_id !== block.id}
-                      className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-[hsl(var(--primary))] text-white hover:opacity-90 transition-colors disabled:opacity-40"
+                      className="w-[48px] h-[48px] flex items-center justify-center rounded-lg bg-[hsl(var(--primary))] text-white hover:opacity-90 transition-colors disabled:opacity-40 cursor-pointer touch-manipulation"
                     >
-                      <Play className="w-4 h-4" />
+                      <Play className="w-5 h-5" />
                     </button>
                   )}
                   {isActive && (
-                    <button onClick={handleStopTimer} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-[hsl(var(--destructive))] text-white hover:opacity-90 transition-colors">
-                      <Square className="w-4 h-4" />
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleStopTimer(); }}
+                      className="w-[48px] h-[48px] flex items-center justify-center rounded-lg bg-[hsl(var(--destructive))] text-white hover:opacity-90 transition-colors cursor-pointer touch-manipulation"
+                    >
+                      <Square className="w-5 h-5" />
                     </button>
                   )}
                   <button
-                    onClick={() => setCompletingBlock(block)}
-                    className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors ${
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setCompletingBlock(block); }}
+                    className={`w-[48px] h-[48px] flex items-center justify-center rounded-lg transition-colors cursor-pointer touch-manipulation ${
                       isCompleted
                         ? "bg-[hsl(var(--chart-3))/0.15] text-[hsl(var(--chart-3))]"
                         : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
                     }`}
                   >
-                    <CheckCircle2 className="w-4 h-4" />
+                    <CheckCircle2 className="w-5 h-5" />
                   </button>
                 </div>
               </div>
@@ -812,8 +962,11 @@ export default function MindPage() {
       </div>
 
       {/* ---------- Fundamentals Coverage ---------- */}
-      {allMindLogs && allMindLogs.length > 0 && (
-        <FundamentalsCoverage allLogs={allMindLogs} />
+      {allMindLogs && (
+        <FundamentalsCoverage
+          allLogs={allMindLogs}
+          onLogFundamental={(fundamental, category) => setQuickLogTarget({ fundamental, category })}
+        />
       )}
 
       {/* ---------- Completion Dialog ---------- */}
@@ -823,6 +976,16 @@ export default function MindPage() {
           existingEntry={getEntryForBlock(completingBlock.id)}
           onSubmit={(data) => handleCompletion(completingBlock, data)}
           onClose={() => setCompletingBlock(null)}
+        />
+      )}
+
+      {/* ---------- Quick Fundamental Log ---------- */}
+      {quickLogTarget && (
+        <QuickFundamentalLog
+          fundamental={quickLogTarget.fundamental}
+          category={quickLogTarget.category}
+          onSubmit={(data) => handleQuickFundamentalLog(quickLogTarget.fundamental, quickLogTarget.category, data)}
+          onClose={() => setQuickLogTarget(null)}
         />
       )}
     </div>
