@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, addDays, startOfWeek } from "date-fns";
 
 import * as queries from "@/lib/queries";
-import { WORKOUT_SCHEDULE } from "@/lib/constants";
+import { WORKOUT_SCHEDULE, getMorningRoutineForDate } from "@/lib/constants";
 import type { DailyLog, DayOfWeek, DaySchedule, Exercise } from "@/lib/types";
 import {
   Dumbbell,
@@ -18,6 +18,7 @@ import {
   Weight,
   Minus,
   Plus,
+  Sun,
 } from "lucide-react";
 
 // ============================================================
@@ -249,6 +250,11 @@ export default function SchedulePage() {
     [selectedDay]
   );
 
+  const morningRoutine = useMemo(
+    () => getMorningRoutineForDate(dateKey),
+    [dateKey]
+  );
+
   const updateWeightMutation = useMutation<DailyLog, Error, { exerciseName: string; weight: number }, { previous?: DailyLog }>({
     mutationFn: ({ exerciseName, weight }) =>
       queries.updateExerciseWeight(dateKey, exerciseName, weight),
@@ -383,6 +389,33 @@ export default function SchedulePage() {
               Optional
             </span>
           )}
+        </div>
+      )}
+
+      {/* ---------- Morning Routine ---------- */}
+      {morningRoutine && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 px-1">
+            <Sun className="w-4 h-4 text-amber-500" />
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+              Morning — {morningRoutine.label}: {morningRoutine.focus}
+            </h3>
+          </div>
+          {morningRoutine.exercises.map((exercise) => (
+            <ExerciseCard
+              key={exercise.name}
+              exercise={exercise}
+              isCompleted={dailyLog.completed_exercises.includes(exercise.name)}
+              currentWeight={dailyLog.exercise_weights[exercise.name]}
+              onToggle={() => toggleExerciseMutation.mutate(exercise.name)}
+              onWeightChange={(weight) =>
+                updateWeightMutation.mutate({
+                  exerciseName: exercise.name,
+                  weight,
+                })
+              }
+            />
+          ))}
         </div>
       )}
 

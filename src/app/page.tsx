@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 
 import * as queries from "@/lib/queries";
-import { WORKOUT_SCHEDULE } from "@/lib/constants";
+import { WORKOUT_SCHEDULE, getMorningRoutineForDate } from "@/lib/constants";
 import type { DailyLog, DayOfWeek, InsertMeal, PhotoAnalysis } from "@/lib/types";
 
 import { StepRing } from "@/components/dashboard/step-ring";
@@ -69,6 +69,11 @@ export default function DashboardPage() {
     const dow = format(today, "EEEE").toLowerCase() as DayOfWeek;
     return WORKOUT_SCHEDULE.find((s) => s.day === dow) ?? null;
   }, [today]);
+
+  const morningRoutine = useMemo(
+    () => getMorningRoutineForDate(dateKey),
+    [dateKey]
+  );
 
   const totalCalories = useMemo(() => {
     if (!dailyLog) return 0;
@@ -597,6 +602,7 @@ export default function DashboardPage() {
       {todaySchedule && (
         <WorkoutCard
           schedule={todaySchedule}
+          morningRoutine={morningRoutine}
           completedExercises={dailyLog.completed_exercises}
           exerciseWeights={dailyLog.exercise_weights}
           morningWalkCompleted={dailyLog.morning_walk_completed}

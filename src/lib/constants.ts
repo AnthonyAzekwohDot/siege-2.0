@@ -1,5 +1,7 @@
+import { differenceInCalendarDays, parseISO } from "date-fns";
 import type {
   DaySchedule,
+  Exercise,
   MindDayPlan,
   MindBlock,
   MindCategory,
@@ -7,6 +9,145 @@ import type {
   SafeMeal,
   WalkPreset,
 } from "@/lib/types";
+
+// ============ MORNING ROUTINES (A → B → C rotation) ============
+
+export interface MorningRoutine {
+  label: string;
+  focus: string;
+  exercises: Exercise[];
+}
+
+/** Epoch for morning routine rotation — Day A starts here */
+const MORNING_ROUTINE_EPOCH = "2026-03-12";
+
+export const MORNING_ROUTINES: MorningRoutine[] = [
+  {
+    label: "Day A",
+    focus: "Push & Shoulders",
+    exercises: [
+      {
+        name: "DB Overhead Press",
+        sets: 3,
+        reps: "10",
+        completed: false,
+        instructions: "Standing, press dumbbells overhead. Full lockout. Control the descent.",
+        muscleGroups: ["shoulders", "triceps"],
+        caloriesPerSet: 10,
+      },
+      {
+        name: "Push-ups (slow, 3s lower)",
+        sets: 3,
+        reps: "12-15",
+        completed: false,
+        instructions: "Full range push-ups. Lower for a full 3 seconds. Chest to floor. Explode up.",
+        muscleGroups: ["chest", "triceps", "shoulders"],
+        caloriesPerSet: 12,
+      },
+      {
+        name: "DB Lateral Raises",
+        sets: 3,
+        reps: "12",
+        completed: false,
+        instructions: "Raise dumbbells to sides, slight bend in elbows. Lead with elbows. Pause at top.",
+        muscleGroups: ["lateral delts"],
+        caloriesPerSet: 7,
+      },
+    ],
+  },
+  {
+    label: "Day B",
+    focus: "Arms & Core",
+    exercises: [
+      {
+        name: "DB Curls",
+        sets: 3,
+        reps: "12",
+        completed: false,
+        instructions: "Standing, curl dumbbells with control. No swinging. Squeeze at the top.",
+        muscleGroups: ["biceps"],
+        caloriesPerSet: 8,
+      },
+      {
+        name: "Diamond Push-ups",
+        sets: 3,
+        reps: "10-12",
+        completed: false,
+        instructions: "Hands close together in diamond shape. Elbows tight to body. Focus on triceps.",
+        muscleGroups: ["triceps", "chest"],
+        caloriesPerSet: 12,
+      },
+      {
+        name: "Dead Bugs (slow)",
+        sets: 3,
+        reps: "10/side",
+        completed: false,
+        instructions: "Lie on back, extend opposite arm and leg. Keep lower back pressed to floor. Slow and controlled.",
+        muscleGroups: ["core", "deep abs"],
+        caloriesPerSet: 6,
+      },
+      {
+        name: "Plank (max hold)",
+        sets: 1,
+        reps: "max",
+        completed: false,
+        instructions: "Forearms on floor, body straight. Squeeze glutes and abs. No sagging hips. Hold as long as possible.",
+        muscleGroups: ["core", "shoulders"],
+        caloriesPerSet: 8,
+      },
+    ],
+  },
+  {
+    label: "Day C",
+    focus: "Posture & Pull",
+    exercises: [
+      {
+        name: "DB Bent-over Rows",
+        sets: 3,
+        reps: "10",
+        completed: false,
+        instructions: "Bent at hips, pull dumbbells to hip. Squeeze shoulder blades together. Control down.",
+        muscleGroups: ["lats", "rhomboids", "biceps"],
+        caloriesPerSet: 10,
+      },
+      {
+        name: "DB Romanian Deadlifts",
+        sets: 3,
+        reps: "10",
+        completed: false,
+        instructions: "Hinge at hips, dumbbells slide down legs. Feel the hamstring stretch. Squeeze glutes to stand.",
+        muscleGroups: ["hamstrings", "glutes", "lower back"],
+        caloriesPerSet: 12,
+      },
+      {
+        name: "Reverse Snow Angels",
+        sets: 3,
+        reps: "12",
+        completed: false,
+        instructions: "Lying face down, arms sweep from sides to overhead and back. Squeeze upper back throughout.",
+        muscleGroups: ["upper back", "rear delts", "traps"],
+        caloriesPerSet: 6,
+      },
+      {
+        name: "Hollow Body Hold",
+        sets: 3,
+        reps: "20sec",
+        completed: false,
+        instructions: "Lie on back, arms overhead, legs straight and off the floor. Press lower back into floor. Hold.",
+        muscleGroups: ["core", "deep abs"],
+        caloriesPerSet: 7,
+      },
+    ],
+  },
+];
+
+/** Get the morning routine (A/B/C) for a given date string (yyyy-MM-dd) */
+export function getMorningRoutineForDate(dateStr: string): MorningRoutine {
+  const days = differenceInCalendarDays(parseISO(dateStr), parseISO(MORNING_ROUTINE_EPOCH));
+  // Ensure positive modulo
+  const index = ((days % 3) + 3) % 3;
+  return MORNING_ROUTINES[index];
+}
 
 // ============ WORKOUT SCHEDULE ============
 
