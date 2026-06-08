@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 
 import * as queries from "@/lib/queries";
+import { calculateDailyBudget } from "@/lib/calculations";
 import { WORKOUT_SCHEDULE, getTrainingPhase } from "@/lib/constants";
 import type { DailyLog, DayOfWeek, InsertMeal, PhotoAnalysis } from "@/lib/types";
 
@@ -68,6 +69,21 @@ export default function DashboardPage() {
     queryKey: ["user-profile"],
     queryFn: () => queries.getUserProfile(),
   });
+
+  const { data: nutritionSummary } = useQuery({
+    queryKey: ["nutrition-summary", dateKey],
+    queryFn: () => queries.getOrCreateNutritionSummary(dateKey),
+  });
+
+  // Same calorie budget the Nutrition page and Tonight Lock use, so the
+  // dashboard never quotes a different target (2400) than the rest of the app.
+  const calorieBudget = useMemo(
+    () =>
+      nutritionSummary
+        ? calculateDailyBudget(nutritionSummary.tdee_snapshot, nutritionSummary.deficit_target_snapshot)
+        : undefined,
+    [nutritionSummary]
+  );
 
   // ---------- Derived data ----------
   const todaySchedule = useMemo(() => {
@@ -348,7 +364,7 @@ export default function DashboardPage() {
       </p>
 
       {/* ---------- Daily Score ---------- */}
-      <DailyScore log={dailyLog} date={today} />
+      <DailyScore log={dailyLog} date={today} calorieBudget={calorieBudget} />
 
       {/* ---------- Insight Card ---------- */}
       <InsightCard
@@ -418,7 +434,7 @@ export default function DashboardPage() {
 
         <CalorieBar
           consumed={totalCalories}
-          goal={dailyLog.calories_goal}
+          goal={calorieBudget ?? dailyLog.calories_goal}
           fruitEaten={dailyLog.fruit_eaten}
         />
 

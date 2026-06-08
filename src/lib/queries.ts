@@ -958,7 +958,14 @@ export async function getExerciseHistory(exerciseName: string, days = 90): Promi
     .gte("date", startDateStr)
     .order("date", { ascending: false });
 
-  if (error) return []; // column missing pre-migration, or transient
+  if (error) {
+    // Only swallow "column does not exist" (pre-migration). Surface everything
+    // else so real DB/network/permission failures are not hidden.
+    const code = (error as { code?: string }).code;
+    const msg = (error as { message?: string }).message ?? "";
+    if (code === "42703" || /exercise_logs/.test(msg)) return [];
+    throw error;
+  }
 
   const sessions: ExerciseSession[] = [];
   for (const row of (data ?? []) as { date: string; exercise_logs?: Record<string, SetEntry[]> }[]) {

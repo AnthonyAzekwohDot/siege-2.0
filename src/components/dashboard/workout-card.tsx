@@ -14,7 +14,8 @@ import {
   Timer,
   X,
 } from "lucide-react";
-import type { DaySchedule, Exercise, SetEntry, PhaseInfo } from "@/lib/types";
+import { useQueryClient } from "@tanstack/react-query";
+import type { DaySchedule, Exercise, SetEntry, PhaseInfo, DailyLog } from "@/lib/types";
 import { useLogSet, useExerciseHistory } from "@/hooks/use-queries";
 import type { ExerciseSession } from "@/lib/queries";
 
@@ -166,6 +167,7 @@ function ExerciseLogger({
   onSetDone: () => void;
 }) {
   const [open, setOpen] = React.useState(false);
+  const queryClient = useQueryClient();
   const logSet = useLogSet(date);
   const { data: history = [] } = useExerciseHistory(exercise.name);
 
@@ -185,14 +187,19 @@ function ExerciseLogger({
   }
 
   function commit(index: number, patch: Partial<SetEntry>) {
-    const base = todaySets[index] ?? {
+    // Build from the freshest cache, not the rendered closure, so rapid taps
+    // compose instead of overwriting each other.
+    const freshSets =
+      queryClient.getQueryData<DailyLog>(["daily-log", date])?.exercise_logs?.[exercise.name] ?? todaySets;
+    const current = freshSets[index];
+    const base: SetEntry = current ?? {
       set: index + 1,
       ...defaultsFor(index),
       done: false,
       ts: new Date().toISOString(),
     };
     const next: SetEntry = { ...base, ...patch, set: index + 1, ts: new Date().toISOString() };
-    const wasDone = todaySets[index]?.done ?? false;
+    const wasDone = current?.done ?? false;
     logSet.mutate({ exerciseName: exercise.name, setIndex: index, entry: next });
     if (!wasDone && next.done) onSetDone();
   }
@@ -265,6 +272,12 @@ function ExerciseLogger({
           );
         })}
       </div>
+
+      {logSet.isError && (
+        <p className="mt-1.5 text-[11px] text-[hsl(var(--destructive))]">
+          Could not save that set. If you just deployed, run the workout DB migration.
+        </p>
+      )}
     </div>
   );
 }

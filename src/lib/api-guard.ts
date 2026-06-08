@@ -43,3 +43,9 @@ export function sameOriginGuard(request: NextRequest): NextResponse | null {
 
   return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
 }
+
+/** Reject on declared Content-Length BEFORE parsing the body into memory. */
+export function contentLengthTooLarge(request: NextRequest, maxBytes = MAX_IMAGE_BYTES + 256_000): boolean {
+  const len = Number(request.headers.get("content-length") ?? "0");
+  return Number.isFinite(len) && len > maxBytes;
+}

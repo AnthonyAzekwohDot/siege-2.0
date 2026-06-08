@@ -275,6 +275,9 @@ export function useLogSet(date: string) {
     { exerciseName: string; setIndex: number; entry: SetEntry },
     { previous?: DailyLog }
   >({
+    // Serialize all set writes for the day so the read-modify-write of the
+    // exercise_logs JSONB can't race and drop a set (last-write-wins).
+    scope: { id: `logset-${date}` },
     mutationFn: ({ exerciseName, setIndex, entry }) =>
       upsertSet(date, exerciseName, setIndex, entry),
     onMutate: async ({ exerciseName, setIndex, entry }) => {
