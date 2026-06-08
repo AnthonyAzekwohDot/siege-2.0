@@ -8,3 +8,7 @@ out
 *.tsbuildinfo
 next-env.d.ts
 .vercel
+
+# local scratch
+_*.log
+.env.local

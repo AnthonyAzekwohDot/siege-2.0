@@ -5,6 +5,7 @@ import { Providers } from "./providers";
 import { Header } from "@/components/shared/header";
 import { BottomNav } from "@/components/shared/bottom-nav";
 import { ServiceWorkerRegister } from "@/components/shared/sw-register";
+import { OfflineBanner } from "@/components/shared/offline-banner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -43,6 +44,7 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased`}>
         <Providers>
           <ServiceWorkerRegister />
+          <OfflineBanner />
           <Header />
           <main className="pt-14 pb-24 min-h-[100dvh]">{children}</main>
           <BottomNav />

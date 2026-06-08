@@ -160,9 +160,8 @@ export async function toggleExercise(date: string, exerciseName: string): Promis
 
   if (error) throw error;
 
-  const caloriesPerExercise = 50;
-  await syncWorkoutExertion(date, exerciseName, caloriesPerExercise, !isCompleted);
-
+  // Resistance training burns little and the old per-exercise estimate (50 cal)
+  // only inflated the budget. Completion is tracked; calories are not credited.
   return data as DailyLog;
 }
 
@@ -865,11 +864,12 @@ export async function getTonightLockStatus(today: string): Promise<{
   const summary = await getOrCreateNutritionSummary(today);
 
   const totalCaloriesEaten = log.meals.reduce((sum, m) => sum + m.calories, 0);
-  const totalExertion = summary.exertions.reduce((sum, e) => sum + e.calories, 0);
-  const budget = summary.tdee_snapshot - summary.deficit_target_snapshot + totalExertion;
+  // Activity is already inside TDEE, so exertion is NOT added back to the budget
+  // or the deficit. Budget = maintenance - target deficit; net deficit = maintenance - eaten.
+  const budget = summary.tdee_snapshot - summary.deficit_target_snapshot;
   const remainingCalories = budget - totalCaloriesEaten;
 
-  const netDeficit = (summary.tdee_snapshot + totalExertion) - totalCaloriesEaten;
+  const netDeficit = summary.tdee_snapshot - totalCaloriesEaten;
   const isOnTrack = netDeficit >= summary.deficit_target_snapshot;
 
   let deficitStatus: string;
