@@ -186,22 +186,27 @@ function ExerciseLogger({
     return { load: prevSet?.load ?? 15, reps: prevSet?.reps ?? lo };
   }
 
-  function commit(index: number, patch: Partial<SetEntry>) {
-    // Build from the freshest cache, not the rendered closure, so rapid taps
-    // compose instead of overwriting each other.
+  function commit(index: number, change: { loadDelta?: number; repsDelta?: number; toggleDone?: boolean }) {
+    // Read the freshest set from cache and apply a RELATIVE change, so rapid
+    // taps compose (deltas) instead of collapsing on a stale rendered value.
     const freshSets =
       queryClient.getQueryData<DailyLog>(["daily-log", date])?.exercise_logs?.[exercise.name] ?? todaySets;
-    const current = freshSets[index];
-    const base: SetEntry = current ?? {
+    const base: SetEntry = freshSets[index] ?? {
       set: index + 1,
       ...defaultsFor(index),
       done: false,
       ts: new Date().toISOString(),
     };
-    const next: SetEntry = { ...base, ...patch, set: index + 1, ts: new Date().toISOString() };
-    const wasDone = current?.done ?? false;
+    let load = base.load;
+    let reps = base.reps;
+    let done = base.done ?? false;
+    if (change.loadDelta != null && load != null) load = Math.max(0, load + change.loadDelta);
+    if (change.repsDelta != null) reps = Math.max(0, (reps ?? 0) + change.repsDelta);
+    const wasDone = done;
+    if (change.toggleDone) done = !done;
+    const next: SetEntry = { ...base, load, reps, done, set: index + 1, ts: new Date().toISOString() };
     logSet.mutate({ exerciseName: exercise.name, setIndex: index, entry: next });
-    if (!wasDone && next.done) onSetDone();
+    if (!wasDone && done) onSetDone();
   }
 
   function isPR(entry: { load: number | null; reps: number | null }): boolean {
@@ -265,9 +270,9 @@ function ExerciseLogger({
               reps={vals.reps}
               done={vals.done ?? false}
               pr={pr}
-              onLoad={(load) => commit(i, { load })}
-              onReps={(reps) => commit(i, { reps })}
-              onToggleDone={() => commit(i, { done: !(entry?.done ?? false) })}
+              onLoadDelta={(d) => commit(i, { loadDelta: d })}
+              onRepsDelta={(d) => commit(i, { repsDelta: d })}
+              onToggleDone={() => commit(i, { toggleDone: true })}
             />
           );
         })}
@@ -291,8 +296,8 @@ function SetRow({
   reps,
   done,
   pr,
-  onLoad,
-  onReps,
+  onLoadDelta,
+  onRepsDelta,
   onToggleDone,
 }: {
   index: number;
@@ -301,31 +306,17 @@ function SetRow({
   reps: number | null;
   done: boolean;
   pr: boolean;
-  onLoad: (load: number) => void;
-  onReps: (reps: number) => void;
+  onLoadDelta: (delta: number) => void;
+  onRepsDelta: (delta: number) => void;
   onToggleDone: () => void;
 }) {
   return (
     <div className={cn("flex items-center gap-2 rounded-md px-1 py-1", done && "bg-[hsl(var(--chart-3))/0.1]")}>
       <span className="w-4 text-center text-xs font-semibold text-[hsl(var(--muted-foreground))]">{index + 1}</span>
 
-      {!isBodyweight && (
-        <Stepper
-          value={load ?? 0}
-          unit="kg"
-          step={1}
-          min={0}
-          onChange={(v) => onLoad(v)}
-        />
-      )}
+      {!isBodyweight && <Stepper value={load ?? 0} unit="kg" onStep={onLoadDelta} />}
 
-      <Stepper
-        value={reps ?? 0}
-        unit={isBodyweight ? "reps" : "x"}
-        step={1}
-        min={0}
-        onChange={(v) => onReps(v)}
-      />
+      <Stepper value={reps ?? 0} unit={isBodyweight ? "reps" : "x"} onStep={onRepsDelta} />
 
       {pr && (
         <span className="flex items-center gap-0.5 text-[10px] font-bold text-[hsl(var(--chart-4))]">
@@ -354,20 +345,16 @@ function SetRow({
 function Stepper({
   value,
   unit,
-  step,
-  min,
-  onChange,
+  onStep,
 }: {
   value: number;
   unit: string;
-  step: number;
-  min: number;
-  onChange: (v: number) => void;
+  onStep: (delta: number) => void;
 }) {
   return (
     <div className="flex items-center gap-1">
       <button
-        onClick={() => onChange(Math.max(min, value - step))}
+        onClick={() => onStep(-1)}
         aria-label="decrease"
         className="flex h-9 w-9 items-center justify-center rounded-lg border border-[hsl(var(--input))] text-[hsl(var(--muted-foreground))] active:bg-[hsl(var(--muted))]"
       >
@@ -378,7 +365,7 @@ function Stepper({
         <span className="ml-0.5 text-[10px] text-[hsl(var(--muted-foreground))]">{unit}</span>
       </div>
       <button
-        onClick={() => onChange(value + step)}
+        onClick={() => onStep(1)}
         aria-label="increase"
         className="flex h-9 w-9 items-center justify-center rounded-lg border border-[hsl(var(--input))] text-[hsl(var(--muted-foreground))] active:bg-[hsl(var(--muted))]"
       >

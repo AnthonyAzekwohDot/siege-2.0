@@ -44,8 +44,16 @@ export function sameOriginGuard(request: NextRequest): NextResponse | null {
   return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
 }
 
-/** Reject on declared Content-Length BEFORE parsing the body into memory. */
-export function contentLengthTooLarge(request: NextRequest, maxBytes = MAX_IMAGE_BYTES + 256_000): boolean {
-  const len = Number(request.headers.get("content-length") ?? "0");
-  return Number.isFinite(len) && len > maxBytes;
+/**
+ * Reject on declared Content-Length BEFORE parsing the body into memory.
+ * Also rejects a MISSING/invalid length: a real browser fetch with a JSON
+ * string body always sets Content-Length, so the only callers without it are
+ * non-browser clients we want to turn away anyway. The post-parse size check
+ * stays as a backstop.
+ */
+export function rejectByContentLength(request: NextRequest, maxBytes = MAX_IMAGE_BYTES + 256_000): boolean {
+  const raw = request.headers.get("content-length");
+  const len = Number(raw);
+  if (!raw || !Number.isFinite(len) || len <= 0) return true;
+  return len > maxBytes;
 }

@@ -7,11 +7,9 @@ import {
   updateSteps,
   addMeal,
   deleteMeal,
-  toggleExercise,
   toggleMorningWalk,
   toggleEveningWalk,
   toggleFruit,
-  updateExerciseWeight,
   updateWater,
   getOrCreateMindLog,
   getAllMindLogs,
@@ -129,18 +127,6 @@ export function useDeleteMeal() {
   });
 }
 
-export function useToggleExercise() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ date, exerciseName }: { date: string; exerciseName: string }) =>
-      toggleExercise(date, exerciseName),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["daily-log", variables.date] });
-      queryClient.invalidateQueries({ queryKey: ["nutrition-summary", variables.date] });
-    },
-  });
-}
-
 export function useToggleMorningWalk() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -167,17 +153,6 @@ export function useToggleFruit() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ date }: { date: string }) => toggleFruit(date),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["daily-log", variables.date] });
-    },
-  });
-}
-
-export function useUpdateExerciseWeight() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ date, exerciseName, weight }: { date: string; exerciseName: string; weight: number }) =>
-      updateExerciseWeight(date, exerciseName, weight),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["daily-log", variables.date] });
     },

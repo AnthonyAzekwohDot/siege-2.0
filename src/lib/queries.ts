@@ -144,27 +144,9 @@ export async function deleteMeal(date: string, mealId: string): Promise<DailyLog
   return data as DailyLog;
 }
 
-export async function toggleExercise(date: string, exerciseName: string): Promise<DailyLog> {
-  const log = await fetchDailyLog(date);
-
-  const isCompleted = log.completed_exercises.includes(exerciseName);
-  const updatedExercises = isCompleted
-    ? log.completed_exercises.filter((e) => e !== exerciseName)
-    : [...log.completed_exercises, exerciseName];
-
-  const { data, error } = await supabase
-    .from("daily_logs")
-    .update({ completed_exercises: updatedExercises })
-    .eq("date", date)
-    .select()
-    .single();
-
-  if (error) throw error;
-
-  // Resistance training burns little and the old per-exercise estimate (50 cal)
-  // only inflated the budget. Completion is tracked; calories are not credited.
-  return data as DailyLog;
-}
+// Exercise completion is derived from per-set logs (see upsertSet). The old
+// direct completed_exercises toggle was removed so there is ONE writer and no
+// way to bypass the set-log invariant.
 
 export async function toggleMorningWalk(date: string): Promise<DailyLog> {
   const log = await fetchDailyLog(date);
@@ -208,22 +190,6 @@ export async function toggleFruit(date: string): Promise<DailyLog> {
   const { data, error } = await supabase
     .from("daily_logs")
     .update({ fruit_eaten: !log.fruit_eaten })
-    .eq("date", date)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as DailyLog;
-}
-
-export async function updateExerciseWeight(date: string, exerciseName: string, weight: number): Promise<DailyLog> {
-  const log = await fetchDailyLog(date);
-
-  const updatedWeights = { ...log.exercise_weights, [exerciseName]: weight };
-
-  const { data, error } = await supabase
-    .from("daily_logs")
-    .update({ exercise_weights: updatedWeights })
     .eq("date", date)
     .select()
     .single();
