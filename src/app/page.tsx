@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 
 import * as queries from "@/lib/queries";
-import { WORKOUT_SCHEDULE, getMorningRoutineForDate } from "@/lib/constants";
+import { WORKOUT_SCHEDULE, getTrainingPhase } from "@/lib/constants";
 import type { DailyLog, DayOfWeek, InsertMeal, PhotoAnalysis } from "@/lib/types";
 
 import { StepRing } from "@/components/dashboard/step-ring";
@@ -64,15 +64,20 @@ export default function DashboardPage() {
     refetchInterval: 60 * 1000,
   });
 
+  const { data: userProfile } = useQuery({
+    queryKey: ["user-profile"],
+    queryFn: () => queries.getUserProfile(),
+  });
+
   // ---------- Derived data ----------
   const todaySchedule = useMemo(() => {
     const dow = format(today, "EEEE").toLowerCase() as DayOfWeek;
     return WORKOUT_SCHEDULE.find((s) => s.day === dow) ?? null;
   }, [today]);
 
-  const morningRoutine = useMemo(
-    () => getMorningRoutineForDate(dateKey),
-    [dateKey]
+  const phase = useMemo(
+    () => getTrainingPhase(userProfile?.sprint_start_date, dateKey),
+    [userProfile?.sprint_start_date, dateKey]
   );
 
   const totalCalories = useMemo(() => {
@@ -146,32 +151,6 @@ export default function DashboardPage() {
               photoAnalysis: meal.photoAnalysis,
             },
           ],
-        });
-      }
-      return { previous };
-    },
-    onError: (_err, _arg, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["daily-log", dateKey], context.previous);
-      }
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData(["daily-log", dateKey], data);
-    },
-  });
-
-  const toggleExerciseMutation = useMutation<DailyLog, Error, string, { previous?: DailyLog }>({
-    mutationFn: (exerciseName) => queries.toggleExercise(dateKey, exerciseName),
-    onMutate: async (exerciseName) => {
-      await queryClient.cancelQueries({ queryKey: ["daily-log", dateKey] });
-      const previous = queryClient.getQueryData<DailyLog>(["daily-log", dateKey]);
-      if (previous) {
-        const isCompleted = previous.completed_exercises.includes(exerciseName);
-        queryClient.setQueryData(["daily-log", dateKey], {
-          ...previous,
-          completed_exercises: isCompleted
-            ? previous.completed_exercises.filter((e) => e !== exerciseName)
-            : [...previous.completed_exercises, exerciseName],
         });
       }
       return { previous };
@@ -264,29 +243,6 @@ export default function DashboardPage() {
         queryClient.setQueryData(["daily-log", dateKey], {
           ...previous,
           water_bottles: bottles,
-        });
-      }
-      return { previous };
-    },
-    onError: (_err, _arg, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["daily-log", dateKey], context.previous);
-      }
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData(["daily-log", dateKey], data);
-    },
-  });
-
-  const updateWeightMutation = useMutation<DailyLog, Error, { name: string; weight: number }, { previous?: DailyLog }>({
-    mutationFn: ({ name, weight }) => queries.updateExerciseWeight(dateKey, name, weight),
-    onMutate: async ({ name, weight }) => {
-      await queryClient.cancelQueries({ queryKey: ["daily-log", dateKey] });
-      const previous = queryClient.getQueryData<DailyLog>(["daily-log", dateKey]);
-      if (previous) {
-        queryClient.setQueryData(["daily-log", dateKey], {
-          ...previous,
-          exercise_weights: { ...previous.exercise_weights, [name]: weight },
         });
       }
       return { previous };
@@ -602,15 +558,13 @@ export default function DashboardPage() {
       {todaySchedule && (
         <WorkoutCard
           schedule={todaySchedule}
-          morningRoutine={morningRoutine}
-          completedExercises={dailyLog.completed_exercises}
-          exerciseWeights={dailyLog.exercise_weights}
+          date={dateKey}
+          exerciseLogs={dailyLog.exercise_logs ?? {}}
           morningWalkCompleted={dailyLog.morning_walk_completed}
           eveningWalkCompleted={dailyLog.evening_walk_completed}
-          onToggleExercise={(name) => toggleExerciseMutation.mutate(name)}
+          phase={phase}
           onToggleMorningWalk={() => toggleMorningWalkMutation.mutate()}
           onToggleEveningWalk={() => toggleEveningWalkMutation.mutate()}
-          onUpdateWeight={(name, weight) => updateWeightMutation.mutate({ name, weight })}
         />
       )}
     </div>

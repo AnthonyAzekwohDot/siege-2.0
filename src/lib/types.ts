@@ -35,6 +35,16 @@ export interface Meal {
   fatG?: number;
 }
 
+/** One logged working set. load=null means bodyweight; reps=null means not yet entered. */
+export interface SetEntry {
+  set: number; // 1-based index within the exercise
+  load: number | null; // kg, or null for bodyweight
+  reps: number | null; // reps achieved (captures AMRAP counts too)
+  rpe?: number;
+  done: boolean;
+  ts: string; // ISO timestamp of last edit
+}
+
 export interface DailyLog {
   id: string;
   date: string;
@@ -44,7 +54,11 @@ export interface DailyLog {
   calories_goal: number;
   fruit_eaten: boolean;
   completed_exercises: string[];
+  /** Legacy single-weight store. Backward-read only; superseded by exercise_logs. */
   exercise_weights: Record<string, number>;
+  /** Per-exercise set log (the progressive-overload record). Requires the
+   *  exercise_logs JSONB column (see supabase/migrations). */
+  exercise_logs?: Record<string, SetEntry[]>;
   morning_walk_completed: boolean;
   evening_walk_completed: boolean;
   water_bottles: number;
@@ -180,6 +194,8 @@ export interface UserProfile {
   last_tonight_lock_date: string | null;
   safe_meals: SafeMeal[];
   walk_presets: WalkPreset[];
+  /** Day-0 of the 90-day sprint (yyyy-MM-dd). Anchors training phase/week. */
+  sprint_start_date?: string | null;
   updated_at: string;
 }
 
@@ -213,6 +229,12 @@ export interface Exercise {
   muscleGroups?: string[];
   diagram?: string;
   caloriesPerSet?: number;
+  /** Working rep range for double progression: [min, max]. */
+  repRange?: [number, number];
+  /** How to run it with fixed 15kg dumbbells at home when load tops out. */
+  homeAlt?: string;
+  /** Bodyweight / AMRAP move: load is not tracked, reps are the PR. */
+  isBodyweight?: boolean;
 }
 
 export interface DaySchedule {
@@ -224,6 +246,23 @@ export interface DaySchedule {
   exercises: Exercise[];
   isRestDay: boolean;
   isOptional: boolean;
+}
+
+// ============ TRAINING PHASE (90-day periodisation) ============
+
+export type TrainingPhase = "base" | "build" | "deload" | "peak";
+
+export interface PhaseInfo {
+  /** 1-based week of the sprint (clamped 1..13). */
+  week: number;
+  /** 1-based day of the sprint. */
+  day: number;
+  phase: TrainingPhase;
+  /** Display label, e.g. "Build · Week 6". */
+  label: string;
+  /** Multiply prescribed sets by this (0.5 on deload weeks). */
+  setMultiplier: number;
+  isDeload: boolean;
 }
 
 // ============ VALIDATION SCHEMAS ============
@@ -286,6 +325,7 @@ export const updateUserProfileSchema = z.object({
   tonight_lock_enabled: z.boolean().optional(),
   safe_meals: z.array(z.object({ id: z.string(), name: z.string(), calories: z.number() })).optional(),
   walk_presets: z.array(z.object({ id: z.string(), name: z.string(), calories: z.number() })).optional(),
+  sprint_start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
 });
 
 export type InsertMeal = z.infer<typeof insertMealSchema>;

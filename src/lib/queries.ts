@@ -20,6 +20,7 @@ import type {
   UpdateUserProfile,
   ExertionEntry,
   Meal,
+  SetEntry,
 } from "@/lib/types";
 
 // ============ DAILY LOGS ============
@@ -900,4 +901,71 @@ export async function logSafeMeal(date: string, name: string, calories: number):
 
 export async function logWalkPreset(date: string, name: string, calories: number): Promise<void> {
   await addExertion(date, { label: name, calories });
+}
+
+// ============ EXERCISE SET LOGGING (progressive overload) ============
+
+export interface ExerciseSession {
+  date: string;
+  sets: SetEntry[];
+}
+
+/** Write one set into today's per-exercise log and re-derive completion.
+ *  Requires the exercise_logs JSONB column (see supabase/migrations). */
+export async function upsertSet(
+  date: string,
+  exerciseName: string,
+  setIndex: number,
+  entry: SetEntry
+): Promise<DailyLog> {
+  const log = await fetchDailyLog(date);
+
+  const logs: Record<string, SetEntry[]> = { ...(log.exercise_logs ?? {}) };
+  const sets = [...(logs[exerciseName] ?? [])];
+  sets[setIndex] = entry;
+  logs[exerciseName] = sets;
+
+  // Completion is derived: an exercise is "done" when any of its sets is done.
+  const anyDone = sets.some((s) => s && s.done);
+  let completed = log.completed_exercises;
+  if (anyDone && !completed.includes(exerciseName)) {
+    completed = [...completed, exerciseName];
+  } else if (!anyDone && completed.includes(exerciseName)) {
+    completed = completed.filter((e) => e !== exerciseName);
+  }
+
+  const { data, error } = await supabase
+    .from("daily_logs")
+    .update({ exercise_logs: logs, completed_exercises: completed })
+    .eq("date", date)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as DailyLog;
+}
+
+/** Recent sessions that logged this exercise, newest first.
+ *  Degrades to [] if the exercise_logs column does not exist yet. */
+export async function getExerciseHistory(exerciseName: string, days = 90): Promise<ExerciseSession[]> {
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+  const startDateStr = localDateStr(startDate);
+
+  const { data, error } = await supabase
+    .from("daily_logs")
+    .select("date, exercise_logs")
+    .gte("date", startDateStr)
+    .order("date", { ascending: false });
+
+  if (error) return []; // column missing pre-migration, or transient
+
+  const sessions: ExerciseSession[] = [];
+  for (const row of (data ?? []) as { date: string; exercise_logs?: Record<string, SetEntry[]> }[]) {
+    const sets = row.exercise_logs?.[exerciseName];
+    if (sets && sets.length > 0 && sets.some((s) => s && (s.reps != null || s.load != null))) {
+      sessions.push({ date: row.date, sets });
+    }
+  }
+  return sessions;
 }

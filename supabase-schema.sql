@@ -82,6 +82,10 @@ CREATE POLICY "Allow all for daily_nutrition_summaries" ON daily_nutrition_summa
 -- Add weight tracking to daily logs
 ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS weight_kg REAL;
 
+-- Workout engine: per-set logging (progressive overload) + 90-day sprint anchor
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS exercise_logs JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS sprint_start_date TEXT;
+
 -- Push notification subscriptions
 CREATE TABLE IF NOT EXISTS push_subscriptions (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
