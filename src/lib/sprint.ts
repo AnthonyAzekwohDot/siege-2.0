@@ -83,7 +83,9 @@ export function projectFatLoss(
   today: string,
   goal: number | null
 ): WeightProjection {
-  const clean = history.filter((h) => typeof h.weight_kg === "number" && !Number.isNaN(h.weight_kg));
+  const clean = history.filter(
+    (h) => typeof h.weight_kg === "number" && !Number.isNaN(h.weight_kg) && h.date <= today
+  );
   if (clean.length === 0) return { ...EMPTY_PROJECTION, goal };
 
   const emaNow = calculateWeightEMA(clean.map((h) => h.weight_kg));
@@ -95,9 +97,12 @@ export function projectFatLoss(
   }));
   const ratePerDay = linearRatePerDay(points);
 
+  // Only project while the sprint is genuinely in flight (Day 1..90). Before it
+  // starts (dayRaw < 1) or after it ends (dayRaw > 90) the extrapolation is junk.
   const sp = getSprintProgress(startDate, today);
+  const inWindow = sp.active && sp.dayRaw >= 1 && sp.dayRaw <= SPRINT_DAYS;
   const projectedDay90 =
-    emaNow != null && ratePerDay != null && sp.active
+    emaNow != null && ratePerDay != null && inWindow
       ? emaNow + ratePerDay * (SPRINT_DAYS - sp.dayRaw)
       : null;
 

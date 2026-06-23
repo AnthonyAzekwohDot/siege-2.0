@@ -3,11 +3,16 @@ import { createClient } from "@supabase/supabase-js";
 
 // Real rate limiting for the unauthenticated OpenAI routes, on top of the
 // same-origin guard. Two ceilings:
-//   - per-IP sliding window: stops a single client hammering the key
-//   - global daily cap: the actual money backstop — once the whole app has made
-//     N OpenAI calls in 24h, further calls are refused regardless of IP.
-// Backed by Supabase (no extra infra). For heavier exposure, swap in an Upstash
-// sliding-window keyed by IP; the env-gated upgrade is left as a follow-up.
+//   - per-IP sliding window: discourages a single client hammering the key.
+//     Best-effort only — the IP comes from request headers, so treat it as a
+//     speed-bump, not a hard control.
+//   - global daily cap: the money backstop — once the whole app has made N
+//     OpenAI calls in 24h, further calls are refused regardless of IP.
+// Backed by Supabase. The ai_usage table is APPEND-ONLY (migration 0002 RLS:
+// read + insert, never delete/update), so the public anon key cannot wipe the
+// log to reset the cap. The limiter fails OPEN on any DB error so a glitch never
+// bricks the owner's own use; the guaranteed financial stop is the hard monthly
+// cap set on the OpenAI account dashboard, which no client can touch.
 
 const PER_IP_LIMIT = 20;
 const PER_IP_WINDOW_MS = 60 * 60 * 1000; // 1 hour
@@ -18,9 +23,14 @@ const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUP
 const db = url && key ? createClient(url, key, { auth: { persistSession: false } }) : null;
 
 function clientIp(request: NextRequest): string {
+  // Prefer x-real-ip (set by Vercel's edge to the true client IP) over the
+  // client-controllable x-forwarded-for. Per-IP is best-effort; the global
+  // daily cap is the real backstop and does not depend on the IP being honest.
+  const real = request.headers.get("x-real-ip");
+  if (real) return real.trim();
   const xff = request.headers.get("x-forwarded-for");
   if (xff) return xff.split(",")[0].trim();
-  return request.headers.get("x-real-ip") ?? "unknown";
+  return "unknown";
 }
 
 function tooMany(message: string, retryAfterSec: number): NextResponse {

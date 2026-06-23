@@ -59,7 +59,18 @@ export async function getOrCreateDailyLog(date: string): Promise<DailyLog> {
     .select()
     .single();
 
-  if (insertError) throw insertError;
+  if (insertError) {
+    // Concurrent first-load race: another query inserted this date first.
+    if ((insertError as { code?: string }).code === "23505") {
+      const { data: existing } = await supabase
+        .from("daily_logs")
+        .select("*")
+        .eq("date", date)
+        .single();
+      if (existing) return existing as DailyLog;
+    }
+    throw insertError;
+  }
   return inserted as DailyLog;
 }
 
@@ -239,7 +250,18 @@ export async function getOrCreateMindLog(date: string): Promise<MindDailyLog> {
     .select()
     .single();
 
-  if (insertError) throw insertError;
+  if (insertError) {
+    // Concurrent first-load race (e.g. two tabs).
+    if ((insertError as { code?: string }).code === "23505") {
+      const { data: existing } = await supabase
+        .from("mind_logs")
+        .select("*")
+        .eq("date", date)
+        .single();
+      if (existing) return existing as MindDailyLog;
+    }
+    throw insertError;
+  }
   return inserted as MindDailyLog;
 }
 
@@ -258,6 +280,23 @@ export async function getAllMindLogs(): Promise<MindDailyLog[]> {
   const { data, error } = await supabase
     .from("mind_logs")
     .select("*")
+    .order("date", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as MindDailyLog[];
+}
+
+/** Mind logs within the last `days` (bounded — for the dashboard/progress
+ *  adherence + verdict, which never need the full all-time history). */
+export async function getMindLogsHistory(days: number): Promise<MindDailyLog[]> {
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+  const startDateStr = localDateStr(startDate);
+
+  const { data, error } = await supabase
+    .from("mind_logs")
+    .select("*")
+    .gte("date", startDateStr)
     .order("date", { ascending: false });
 
   if (error) throw error;
@@ -405,7 +444,26 @@ export async function updateUserProfile(update: UpdateUserProfile): Promise<User
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    // If migration 0002 hasn't run yet, the new optional columns don't exist
+    // (42703). Retry without them so the rest of Settings still saves rather
+    // than failing the whole form.
+    if ((error as { code?: string }).code === "42703") {
+      const { goal_weight_kg, protein_floor_g, sprint_start_date, ...rest } = update;
+      void goal_weight_kg;
+      void protein_floor_g;
+      void sprint_start_date;
+      const retry = await supabase
+        .from("user_profiles")
+        .update({ ...rest, updated_at: new Date().toISOString() })
+        .eq("id", "default-user")
+        .select()
+        .single();
+      if (retry.error) throw retry.error;
+      return retry.data as UserProfile;
+    }
+    throw error;
+  }
   return data as UserProfile;
 }
 
@@ -446,7 +504,20 @@ export async function getOrCreateNutritionSummary(date: string): Promise<DailyNu
     .select()
     .single();
 
-  if (insertError) throw insertError;
+  if (insertError) {
+    // A concurrent first-load (e.g. dashboard + tonight-lock) may have inserted
+    // this date already (unique violation). Re-read the winning row rather than
+    // surfacing a transient error; the frozen snapshot stays intact.
+    if ((insertError as { code?: string }).code === "23505") {
+      const { data: existing } = await supabase
+        .from("daily_nutrition_summaries")
+        .select("*")
+        .eq("date", date)
+        .single();
+      if (existing) return existing as DailyNutritionSummary;
+    }
+    throw insertError;
+  }
   return inserted as DailyNutritionSummary;
 }
 
@@ -977,33 +1048,16 @@ export async function upsertBenchmark(
   note: string,
   takenOn: string
 ): Promise<ArtBenchmark> {
-  const { data: existing } = await supabase
+  // Atomic upsert keyed by the (checkpoint, prompt_id) unique index — no
+  // select-then-insert race and no orphaned second insert under double capture.
+  const { data, error } = await supabase
     .from("art_benchmarks")
-    .select("id")
-    .eq("checkpoint", checkpoint)
-    .eq("prompt_id", promptId)
-    .maybeSingle();
-
-  if (existing) {
-    const { data, error } = await supabase
-      .from("art_benchmarks")
-      .update({ artefact_url: artefactUrl, note, taken_on: takenOn })
-      .eq("id", (existing as { id: string }).id)
-      .select()
-      .single();
-    if (error) throw error;
-    return data as ArtBenchmark;
-  }
-
-  const row: ArtBenchmark = {
-    id: crypto.randomUUID(),
-    checkpoint,
-    prompt_id: promptId,
-    artefact_url: artefactUrl,
-    note,
-    taken_on: takenOn,
-  };
-  const { data, error } = await supabase.from("art_benchmarks").insert(row).select().single();
+    .upsert(
+      { checkpoint, prompt_id: promptId, artefact_url: artefactUrl, note, taken_on: takenOn },
+      { onConflict: "checkpoint,prompt_id" }
+    )
+    .select()
+    .single();
   if (error) throw error;
   return data as ArtBenchmark;
 }

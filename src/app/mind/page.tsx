@@ -450,7 +450,7 @@ function CompletionDialog({
     try {
       setArtefactUrl(await uploadArtefact(file, "sessions"));
     } catch {
-      setUploadErr("Upload failed — run migration 0002 / check the artefacts bucket.");
+      setUploadErr("Upload failed. Check your connection and try again. (If it persists, confirm migration 0002 ran.)");
     } finally {
       setUploading(false);
     }

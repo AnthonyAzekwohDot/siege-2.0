@@ -93,8 +93,8 @@ export default function DashboardPage() {
     queryFn: () => queries.getNutritionSummaries(95),
   });
   const { data: mindLogs } = useQuery({
-    queryKey: ["all-mind-logs"],
-    queryFn: () => queries.getAllMindLogs(),
+    queryKey: ["mind-logs-history", 95],
+    queryFn: () => queries.getMindLogsHistory(95),
   });
 
   // Same calorie budget the Nutrition page and Tonight Lock use, so the
@@ -140,7 +140,7 @@ export default function DashboardPage() {
   );
   const proteinFloor =
     userProfile?.protein_floor_g ??
-    defaultProteinFloor(userProfile?.goal_weight_kg ?? null, userProfile?.weight_kg ?? 151);
+    defaultProteinFloor(userProfile?.goal_weight_kg ?? null, userProfile?.weight_kg ?? 90);
 
   const adherence = useMemo(() => {
     if (!userProfile) return null;

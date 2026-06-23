@@ -83,7 +83,7 @@ export function SprintHeader({ progress, phaseLabel, isDeload, projection }: Spr
             Sprint complete
           </p>
         ) : (
-          <p className="text-3xl font-bold text-[hsl(var(--foreground))]">
+          <p className="text-3xl font-bold text-[hsl(var(--foreground))] whitespace-nowrap">
             Day {progress.day}
             <span className="text-lg font-semibold text-[hsl(var(--muted-foreground))]">
               {" "}

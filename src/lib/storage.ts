@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 // the bucket is public-read with anon write, same trade-off as the DB RLS.
 
 const BUCKET = "artefacts";
+const MAX_ARTEFACT_BYTES = 6_000_000; // mirrors the bucket's 6MB server limit
 
 function extFor(type: string): string {
   if (type.includes("png")) return "png";
@@ -18,6 +19,9 @@ function extFor(type: string): string {
  * @param prefix folder within the bucket, e.g. "sessions" or "benchmarks".
  */
 export async function uploadArtefact(file: File | Blob, prefix: string): Promise<string> {
+  if (file.size > MAX_ARTEFACT_BYTES) {
+    throw new Error("Image is too large (max 6MB). Try a smaller photo.");
+  }
   const type = (file as File).type || "image/jpeg";
   const path = `${prefix}/${crypto.randomUUID()}.${extFor(type)}`;
 

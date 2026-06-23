@@ -18,7 +18,7 @@ export function ProteinBar({ consumed, floor }: ProteinBarProps) {
           Protein floor
         </span>
         <span
-          className={`text-xs font-semibold ${
+          className={`text-xs font-semibold tabular-nums shrink-0 ${
             met ? "text-[hsl(var(--chart-3))]" : "text-[hsl(var(--foreground))]"
           }`}
         >

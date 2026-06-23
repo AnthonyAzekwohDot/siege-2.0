@@ -272,7 +272,7 @@ export default function NutritionPage() {
   const proteinConsumed = totalProtein(dailyLog.meals);
   const proteinFloor =
     userProfile?.protein_floor_g ??
-    defaultProteinFloor(userProfile?.goal_weight_kg ?? null, userProfile?.weight_kg ?? 151);
+    defaultProteinFloor(userProfile?.goal_weight_kg ?? null, userProfile?.weight_kg ?? 90);
 
   return (
     <div className="max-w-2xl mx-auto p-4 pb-12 space-y-4">

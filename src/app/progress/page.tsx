@@ -483,8 +483,8 @@ export default function ProgressPage() {
     queryFn: () => queries.getNutritionSummaries(95),
   });
   const { data: mindLogs } = useQuery({
-    queryKey: ["all-mind-logs"],
-    queryFn: () => queries.getAllMindLogs(),
+    queryKey: ["mind-logs-history", 95],
+    queryFn: () => queries.getMindLogsHistory(95),
   });
   const { data: weightHistory } = useQuery({
     queryKey: ["weight-history", 90],

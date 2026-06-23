@@ -25,7 +25,7 @@ export function ArtefactDiary({ allLogs }: { allLogs: MindDailyLog[] }) {
           Artefact Diary
         </h3>
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         {recent.map((it, i) => (
           <a
             key={i}

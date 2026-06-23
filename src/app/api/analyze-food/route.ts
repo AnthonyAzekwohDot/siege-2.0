@@ -13,9 +13,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: "Image too large or missing length" }, { status: 413 });
   }
 
-  const limited = await enforceRateLimit(request, "analyze-food");
-  if (limited) return limited;
-
   const apiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
@@ -51,6 +48,11 @@ export async function POST(request: NextRequest) {
       { status: 413 }
     );
   }
+
+  // Rate-limit only requests that will actually reach OpenAI, so the usage log
+  // (and the daily money cap) reflects real spend, not rejected/invalid posts.
+  const limited = await enforceRateLimit(request, "analyze-food");
+  if (limited) return limited;
 
   const openai = new OpenAI({ apiKey });
 

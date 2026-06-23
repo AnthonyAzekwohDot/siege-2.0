@@ -120,8 +120,10 @@ export function computeLineHeld(
     },
   ];
 
-  // The body holds when you ate in deficit AND did something physical.
-  const bodyHeld = deficitHeld && (moveHeld || trainHeld);
+  // The body holds when you ate in deficit AND actually moved (steps goal, a
+  // walk, or a logged workout). Rest days still require movement — Train is an
+  // informational sub-line, never a way to "hold" with zero activity.
+  const bodyHeld = deficitHeld && moveHeld;
   const held = bodyHeld && mindHeld;
 
   const applicable = lines.filter((l) => !l.na);

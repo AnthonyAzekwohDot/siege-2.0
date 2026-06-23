@@ -42,7 +42,7 @@ export function BenchmarksCard({ sprintDay, today, sprintActive }: BenchmarksCar
       await queries.upsertBenchmark(activeCp, promptId, url, "", today);
       await qc.invalidateQueries({ queryKey: ["benchmarks"] });
     } catch {
-      setErr("Upload failed — run migration 0002 and confirm the artefacts bucket exists.");
+      setErr("Upload failed. Check your connection and try again. (If it persists, confirm migration 0002 ran.)");
     } finally {
       setUploading(null);
     }
@@ -67,7 +67,7 @@ export function BenchmarksCard({ sprintDay, today, sprintActive }: BenchmarksCar
           <button
             key={cp}
             onClick={() => setActiveCp(cp)}
-            className={`py-2 rounded-lg text-sm font-semibold transition-colors ${
+            className={`min-h-[44px] py-2 rounded-lg text-sm font-semibold transition-colors ${
               activeCp === cp
                 ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
                 : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"
@@ -110,12 +110,19 @@ export function BenchmarksCard({ sprintDay, today, sprintActive }: BenchmarksCar
                 </p>
                 <p className="text-[11px] text-[hsl(var(--muted-foreground))] truncate">{p.hint}</p>
               </div>
-              <label className="text-xs font-semibold text-[hsl(var(--primary))] active:opacity-70 cursor-pointer shrink-0">
-                {existing ? "Replace" : "Capture"}
+              <label
+                className={`inline-flex items-center justify-center min-h-[44px] px-3 rounded-lg text-xs font-semibold shrink-0 ${
+                  busy
+                    ? "text-[hsl(var(--muted-foreground))] pointer-events-none"
+                    : "text-[hsl(var(--primary))] active:opacity-70 cursor-pointer"
+                }`}
+              >
+                {busy ? "…" : existing ? "Replace" : "Capture"}
                 <input
                   type="file"
                   accept="image/*"
                   className="hidden"
+                  disabled={busy}
                   onChange={(e) => capture(p.id, e.target.files?.[0])}
                 />
               </label>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import { sameOriginGuard } from "@/lib/api-guard";
+import { sameOriginGuard, rejectByContentLength } from "@/lib/api-guard";
 import { enforceRateLimit } from "@/lib/rate-limit";
 
 interface PreviousMeal {
@@ -18,8 +18,10 @@ export async function POST(request: NextRequest) {
   const blocked = sameOriginGuard(request);
   if (blocked) return blocked;
 
-  const limited = await enforceRateLimit(request, "food-suggestions");
-  if (limited) return limited;
+  // Small JSON body — reject oversized/missing-length posts cheaply.
+  if (rejectByContentLength(request, 64_000)) {
+    return NextResponse.json({ success: false, error: "Request too large" }, { status: 413 });
+  }
 
   const apiKey = process.env.OPENAI_API_KEY;
 
@@ -57,11 +59,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Bound the prompt input so a huge previousMeals array can't inflate the call.
+  const meals = Array.isArray(previousMeals) ? previousMeals.slice(0, 50) : [];
+
+  // Count only requests that will actually reach OpenAI.
+  const limited = await enforceRateLimit(request, "food-suggestions");
+  if (limited) return limited;
+
   const openai = new OpenAI({ apiKey });
 
   const mealsContext =
-    previousMeals && previousMeals.length > 0
-      ? `Today's meals so far:\n${previousMeals.map((m) => `- ${m.description} (${m.calories} cal)`).join("\n")}`
+    meals.length > 0
+      ? `Today's meals so far:\n${meals.map((m) => `- ${m.description} (${m.calories} cal)`).join("\n")}`
       : "No meals logged yet today.";
 
   const systemPrompt = `You are a nutrition expert helping someone stay within their daily calorie budget while eating balanced, satisfying meals.
