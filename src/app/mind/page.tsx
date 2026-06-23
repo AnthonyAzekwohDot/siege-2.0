@@ -11,6 +11,8 @@ import {
   MIND_CATEGORY_INFO,
   DEEP_WORK_CATEGORIES,
 } from "@/lib/constants";
+import { getSprintProgress } from "@/lib/sprint";
+import { uploadArtefact } from "@/lib/storage";
 import type {
   MindDailyLog,
   MindBlock,
@@ -22,6 +24,9 @@ import type {
   DayOfWeek,
 } from "@/lib/types";
 import { FUNDAMENTALS, FUNDAMENTAL_LABELS, DRAWING_FUNDAMENTALS, PAINTING_FUNDAMENTALS } from "@/lib/types";
+import { NeglectNudge } from "@/components/mind/neglect-nudge";
+import { ArtefactDiary } from "@/components/mind/artefact-diary";
+import { BenchmarksCard } from "@/components/mind/benchmarks-card";
 import {
   Play,
   Square,
@@ -37,6 +42,8 @@ import {
   Target,
   Crosshair,
   Sparkles,
+  Camera,
+  Loader2,
 } from "lucide-react";
 
 // ============================================================
@@ -418,6 +425,7 @@ function CompletionDialog({
     fundamentals: Fundamental[];
     stretchLevel: StretchLevel;
     masterReference: string;
+    artefactUrl?: string;
   }) => void;
   onClose: () => void;
 }) {
@@ -428,9 +436,25 @@ function CompletionDialog({
   const [fundamentals, setFundamentals] = useState<Fundamental[]>(existingEntry?.fundamentals ?? []);
   const [stretchLevel, setStretchLevel] = useState<StretchLevel>(existingEntry?.stretchLevel ?? "stretch");
   const [masterReference, setMasterReference] = useState(existingEntry?.masterReference ?? "");
+  const [artefactUrl, setArtefactUrl] = useState<string | undefined>(existingEntry?.artefactUrl);
+  const [uploading, setUploading] = useState(false);
+  const [uploadErr, setUploadErr] = useState("");
 
   const hasFocusOptions = block.focusOptions && block.focusOptions.length > 0;
   const isMasterStudy = block.category === "master-study";
+
+  async function handleArtefact(file: File | undefined) {
+    if (!file) return;
+    setUploadErr("");
+    setUploading(true);
+    try {
+      setArtefactUrl(await uploadArtefact(file, "sessions"));
+    } catch {
+      setUploadErr("Upload failed — run migration 0002 / check the artefacts bucket.");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40">
@@ -531,9 +555,38 @@ function CompletionDialog({
           />
         </div>
 
+        {/* Artefact photo */}
+        <div>
+          <p className="text-xs font-semibold uppercase text-[hsl(var(--muted-foreground))] mb-2">
+            Artefact (optional)
+          </p>
+          <div className="flex items-center gap-3">
+            {artefactUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={artefactUrl} alt="artefact" className="w-16 h-16 rounded-lg object-cover" />
+            ) : (
+              <div className="w-16 h-16 rounded-lg bg-[hsl(var(--muted))] flex items-center justify-center text-[hsl(var(--muted-foreground))]">
+                {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
+              </div>
+            )}
+            <label className="text-xs font-semibold text-[hsl(var(--primary))] cursor-pointer active:opacity-70">
+              {artefactUrl ? "Replace photo" : "Add photo"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleArtefact(e.target.files?.[0])}
+              />
+            </label>
+          </div>
+          {uploadErr && <p className="text-[11px] text-[hsl(var(--destructive))] mt-1.5">{uploadErr}</p>}
+        </div>
+
         {/* Submit */}
         <button
-          onClick={() => onSubmit({ status, actualMinutes, rating, note, fundamentals, stretchLevel, masterReference })}
+          onClick={() =>
+            onSubmit({ status, actualMinutes, rating, note, fundamentals, stretchLevel, masterReference, artefactUrl })
+          }
           className="w-full py-3 rounded-xl text-sm font-semibold bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] transition-colors hover:opacity-90"
         >
           Save
@@ -568,6 +621,16 @@ export default function MindPage() {
     queryKey: ["all-mind-logs"],
     queryFn: () => queries.getAllMindLogs(),
   });
+
+  const { data: userProfile } = useQuery({
+    queryKey: ["user-profile"],
+    queryFn: queries.getUserProfile,
+  });
+
+  const sprint = useMemo(
+    () => getSprintProgress(userProfile?.sprint_start_date, dateKey),
+    [userProfile?.sprint_start_date, dateKey]
+  );
 
   // ---------- Today's schedule ----------
   const todayPlan = useMemo(() => {
@@ -672,7 +735,7 @@ export default function MindPage() {
   const handleCompletion = useCallback(
     (block: MindBlock, data: {
       status: BlockStatus; actualMinutes: number; rating: number; note: string;
-      fundamentals: Fundamental[]; stretchLevel: StretchLevel; masterReference: string;
+      fundamentals: Fundamental[]; stretchLevel: StretchLevel; masterReference: string; artefactUrl?: string;
     }) => {
       const existingEntry = getEntryForBlock(block.id);
       const updatePayload: Partial<MindLogEntry> = {
@@ -683,6 +746,7 @@ export default function MindPage() {
         fundamentals: data.fundamentals,
         stretchLevel: data.stretchLevel,
         masterReference: data.masterReference || undefined,
+        artefactUrl: data.artefactUrl,
         completedAt: new Date().toISOString(),
       };
 
@@ -784,6 +848,9 @@ export default function MindPage() {
           {allMindLogs && <StreakBadge allLogs={allMindLogs} />}
         </div>
       </div>
+
+      {/* ---------- Target Today (neglect nudge) ---------- */}
+      {allMindLogs && <NeglectNudge allLogs={allMindLogs} today={dateKey} />}
 
       {/* ---------- Today's Push Level ---------- */}
       {(todayStretchCount.stretch > 0 || todayStretchCount.breakthrough > 0) && (
@@ -916,6 +983,12 @@ export default function MindPage() {
                   {entry?.masterReference && (
                     <p className="text-[10px] text-[hsl(var(--chart-4))] mt-1 italic">Studied: {entry.masterReference}</p>
                   )}
+                  {entry?.artefactUrl && (
+                    <a href={entry.artefactUrl} target="_blank" rel="noreferrer" className="inline-block mt-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={entry.artefactUrl} alt="artefact" className="w-14 h-14 rounded-lg object-cover" />
+                    </a>
+                  )}
                 </div>
 
                 {/* Actions */}
@@ -968,6 +1041,12 @@ export default function MindPage() {
           onLogFundamental={(fundamental, category) => setQuickLogTarget({ fundamental, category })}
         />
       )}
+
+      {/* ---------- Benchmarks (Day 0/45/90) ---------- */}
+      <BenchmarksCard sprintDay={sprint.dayRaw} today={dateKey} sprintActive={sprint.active} />
+
+      {/* ---------- Artefact Diary ---------- */}
+      {allMindLogs && <ArtefactDiary allLogs={allMindLogs} />}
 
       {/* ---------- Completion Dialog ---------- */}
       {completingBlock && (

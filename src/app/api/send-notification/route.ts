@@ -7,13 +7,16 @@ const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY!;
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-webPush.setVapidDetails(
-  "mailto:anthonyazekwoh@gmail.com",
-  VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY
-);
-
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Lazy VAPID init: a module-scope setVapidDetails made the production build's
+// page-data collection hard-depend on the VAPID env. Initialise on first use.
+let vapidReady = false;
+function ensureVapid() {
+  if (vapidReady) return;
+  webPush.setVapidDetails("mailto:anthonyazekwoh@gmail.com", VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+  vapidReady = true;
+}
 
 export async function POST(request: NextRequest) {
   // Auth check
@@ -21,6 +24,8 @@ export async function POST(request: NextRequest) {
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  ensureVapid();
 
   try {
     const { type, title, body, url } = await request.json();

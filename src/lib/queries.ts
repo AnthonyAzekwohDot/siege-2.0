@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { calculateBMR, calculateTDEE, WALK_CALORIES, CALORIES_PER_STEP } from "@/lib/calculations";
+import { calculateBMR, calculateTDEE, calculateWeightEMA, WALK_CALORIES, CALORIES_PER_STEP } from "@/lib/calculations";
 
 /** Format a Date as yyyy-MM-dd in LOCAL time (not UTC). */
 function localDateStr(d: Date = new Date()): string {
@@ -21,6 +21,7 @@ import type {
   ExertionEntry,
   Meal,
   SetEntry,
+  ArtBenchmark,
 } from "@/lib/types";
 
 // ============ DAILY LOGS ============
@@ -422,7 +423,13 @@ export async function getOrCreateNutritionSummary(date: string): Promise<DailyNu
   if (data) return data as DailyNutritionSummary;
 
   const profile = await getUserProfile();
-  const bmr = calculateBMR(profile.weight_kg, profile.height_cm, profile.age, profile.sex);
+  // TDEE tracks the real body, not a stale profile number: use an EMA of the
+  // last few weeks of logged weights, falling back to the profile weight when
+  // nothing is logged yet. Computed once per day, then frozen into the snapshot.
+  const recentWeights = await getWeightHistory(28);
+  const emaWeight = calculateWeightEMA(recentWeights.map((r) => r.weight_kg));
+  const weightForTDEE = emaWeight ?? profile.weight_kg;
+  const bmr = calculateBMR(weightForTDEE, profile.height_cm, profile.age, profile.sex);
   const tdee = calculateTDEE(bmr, profile.activity_level);
 
   const newSummary: DailyNutritionSummary = {
@@ -941,4 +948,62 @@ export async function getExerciseHistory(exerciseName: string, days = 90): Promi
     }
   }
   return sessions;
+}
+
+// ============ ART BENCHMARKS (Day-0/45/90) ============
+
+/** All benchmark captures. Degrades to [] before the art_benchmarks table
+ *  exists (migration 0002), so the rest of the Mind page still renders. */
+export async function getBenchmarks(): Promise<ArtBenchmark[]> {
+  const { data, error } = await supabase
+    .from("art_benchmarks")
+    .select("*")
+    .order("checkpoint", { ascending: true });
+
+  if (error) {
+    const code = (error as { code?: string }).code;
+    const msg = (error as { message?: string }).message ?? "";
+    if (code === "42P01" || /art_benchmarks/.test(msg)) return [];
+    throw error;
+  }
+  return (data ?? []) as ArtBenchmark[];
+}
+
+/** Capture (or replace) the artefact for one checkpoint + prompt. */
+export async function upsertBenchmark(
+  checkpoint: number,
+  promptId: string,
+  artefactUrl: string,
+  note: string,
+  takenOn: string
+): Promise<ArtBenchmark> {
+  const { data: existing } = await supabase
+    .from("art_benchmarks")
+    .select("id")
+    .eq("checkpoint", checkpoint)
+    .eq("prompt_id", promptId)
+    .maybeSingle();
+
+  if (existing) {
+    const { data, error } = await supabase
+      .from("art_benchmarks")
+      .update({ artefact_url: artefactUrl, note, taken_on: takenOn })
+      .eq("id", (existing as { id: string }).id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data as ArtBenchmark;
+  }
+
+  const row: ArtBenchmark = {
+    id: crypto.randomUUID(),
+    checkpoint,
+    prompt_id: promptId,
+    artefact_url: artefactUrl,
+    note,
+    taken_on: takenOn,
+  };
+  const { data, error } = await supabase.from("art_benchmarks").insert(row).select().single();
+  if (error) throw error;
+  return data as ArtBenchmark;
 }

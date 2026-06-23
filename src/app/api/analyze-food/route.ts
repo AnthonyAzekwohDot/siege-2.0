@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { FOOD_DATABASE, findFood, calculateNutrition } from "@/lib/food-database";
 import { sameOriginGuard, rejectByContentLength, MAX_IMAGE_BYTES } from "@/lib/api-guard";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import type { DetectedFoodItem, PhotoAnalysis } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
@@ -11,6 +12,9 @@ export async function POST(request: NextRequest) {
   if (rejectByContentLength(request)) {
     return NextResponse.json({ success: false, error: "Image too large or missing length" }, { status: 413 });
   }
+
+  const limited = await enforceRateLimit(request, "analyze-food");
+  if (limited) return limited;
 
   const apiKey = process.env.OPENAI_API_KEY;
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { sameOriginGuard } from "@/lib/api-guard";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 interface PreviousMeal {
   description: string;
@@ -16,6 +17,9 @@ interface SuggestionItem {
 export async function POST(request: NextRequest) {
   const blocked = sameOriginGuard(request);
   if (blocked) return blocked;
+
+  const limited = await enforceRateLimit(request, "food-suggestions");
+  if (limited) return limited;
 
   const apiKey = process.env.OPENAI_API_KEY;
 

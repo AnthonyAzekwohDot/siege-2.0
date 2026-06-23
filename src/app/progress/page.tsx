@@ -2,10 +2,15 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, subDays } from "date-fns";
 
 import * as queries from "@/lib/queries";
 import type { DailyLog } from "@/lib/types";
+import { getTrainingPhase } from "@/lib/constants";
+import { getSprintProgress, projectFatLoss } from "@/lib/sprint";
+import { computeWeeklyVerdict } from "@/lib/adherence";
+import { SprintHeader } from "@/components/sprint/sprint-header";
+import { WeeklyVerdictCard } from "@/components/sprint/weekly-verdict-card";
 import {
   Footprints,
   Flame,
@@ -467,6 +472,52 @@ export default function ProgressPage() {
     queryFn: () => queries.getAllLogs(),
   });
 
+  // ---------- Sprint + verdict data ----------
+  const todayKey = format(today, "yyyy-MM-dd");
+  const { data: userProfile } = useQuery({
+    queryKey: ["user-profile"],
+    queryFn: queries.getUserProfile,
+  });
+  const { data: summaries } = useQuery({
+    queryKey: ["nutrition-history", 95],
+    queryFn: () => queries.getNutritionSummaries(95),
+  });
+  const { data: mindLogs } = useQuery({
+    queryKey: ["all-mind-logs"],
+    queryFn: () => queries.getAllMindLogs(),
+  });
+  const { data: weightHistory } = useQuery({
+    queryKey: ["weight-history", 90],
+    queryFn: () => queries.getWeightHistory(90),
+  });
+
+  const sprint = useMemo(
+    () => getSprintProgress(userProfile?.sprint_start_date, todayKey),
+    [userProfile?.sprint_start_date, todayKey]
+  );
+  const phase = useMemo(
+    () => getTrainingPhase(userProfile?.sprint_start_date, todayKey),
+    [userProfile?.sprint_start_date, todayKey]
+  );
+  const projection = useMemo(
+    () =>
+      projectFatLoss(
+        weightHistory ?? [],
+        userProfile?.sprint_start_date,
+        todayKey,
+        userProfile?.goal_weight_kg ?? null
+      ),
+    [weightHistory, userProfile?.sprint_start_date, userProfile?.goal_weight_kg, todayKey]
+  );
+  const weeklyVerdict = useMemo(() => {
+    if (!userProfile || !allLogs) return null;
+    const dates = Array.from({ length: 7 }, (_, i) =>
+      format(subDays(today, 6 - i), "yyyy-MM-dd")
+    );
+    return computeWeeklyVerdict(dates, allLogs, summaries ?? [], mindLogs ?? [], userProfile);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userProfile, allLogs, summaries, mindLogs, todayKey]);
+
   // ---------- Month stats ----------
   const monthStats = useMemo(() => {
     if (!allLogs) return null;
@@ -570,6 +621,19 @@ export default function ProgressPage() {
           Historical analytics
         </p>
       </div>
+
+      {/* ---------- Sprint Finish Line ---------- */}
+      {userProfile && (
+        <SprintHeader
+          progress={sprint}
+          phaseLabel={phase.label}
+          isDeload={phase.isDeload}
+          projection={projection}
+        />
+      )}
+
+      {/* ---------- Weekly Verdict ---------- */}
+      {weeklyVerdict && <WeeklyVerdictCard verdict={weeklyVerdict} />}
 
       {/* ---------- Weight Tracking ---------- */}
       <WeightCard />

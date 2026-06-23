@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { format } from "date-fns";
 import * as queries from "@/lib/queries";
 import type { UpdateUserProfile } from "@/lib/types";
+import { getSprintProgress, defaultProteinFloor } from "@/lib/sprint";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -90,6 +92,9 @@ export default function SettingsPage() {
     has_asthma: false,
     tonight_lock_enabled: true,
     tonight_lock_time: "20:00",
+    sprint_start_date: null,
+    goal_weight_kg: null,
+    protein_floor_g: null,
   });
 
   useEffect(() => {
@@ -104,6 +109,9 @@ export default function SettingsPage() {
         has_asthma: profile.has_asthma,
         tonight_lock_enabled: profile.tonight_lock_enabled,
         tonight_lock_time: profile.tonight_lock_time,
+        sprint_start_date: profile.sprint_start_date ?? null,
+        goal_weight_kg: profile.goal_weight_kg ?? null,
+        protein_floor_g: profile.protein_floor_g ?? null,
       });
     }
   }, [profile]);
@@ -127,6 +135,11 @@ export default function SettingsPage() {
   ) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
+
+  // ---------- Sprint derived ----------
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const sprint = getSprintProgress(form.sprint_start_date ?? null, todayStr);
+  const suggestedFloor = defaultProteinFloor(form.goal_weight_kg ?? null, form.weight_kg ?? 151);
 
   // ---------- Notification state ----------
   const [notifEnabled, setNotifEnabled] = useState(false);
@@ -234,6 +247,67 @@ export default function SettingsPage() {
             </select>
           </FormRow>
         </div>
+      </section>
+
+      {/* ---------- The Sprint ---------- */}
+      <section className="glass-card p-5">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1">
+          The 90-Day Sprint
+        </h3>
+        <div>
+          <FormRow label="Start date (Day 0)">
+            <Input
+              type="date"
+              value={form.sprint_start_date ?? ""}
+              onChange={(e) =>
+                updateField("sprint_start_date", e.target.value ? e.target.value : null)
+              }
+              className="w-[150px] text-right"
+            />
+          </FormRow>
+          <FormRow label="Goal weight (kg)">
+            <Input
+              type="number"
+              value={form.goal_weight_kg ?? ""}
+              onChange={(e) =>
+                updateField("goal_weight_kg", e.target.value === "" ? null : Number(e.target.value))
+              }
+              className="w-[100px] text-right"
+            />
+          </FormRow>
+          <FormRow label="Protein floor (g)">
+            <Input
+              type="number"
+              placeholder={String(suggestedFloor)}
+              value={form.protein_floor_g ?? ""}
+              onChange={(e) =>
+                updateField("protein_floor_g", e.target.value === "" ? null : Number(e.target.value))
+              }
+              className="w-[100px] text-right"
+            />
+          </FormRow>
+        </div>
+        <div className="mt-3 flex items-center justify-between">
+          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+            {sprint.active && !sprint.notStarted
+              ? `Day ${sprint.day} of ${sprint.totalDays}`
+              : sprint.notStarted
+              ? "Anchored for a future date"
+              : "Not started"}
+          </p>
+          <button
+            type="button"
+            onClick={() => updateField("sprint_start_date", todayStr)}
+            className="text-xs font-semibold text-[hsl(var(--primary))] active:opacity-70"
+          >
+            Start today
+          </button>
+        </div>
+        {form.protein_floor_g == null && (
+          <p className="text-[11px] text-[hsl(var(--muted-foreground))] mt-2">
+            Suggested floor {suggestedFloor}g (1.8g/kg of goal weight).
+          </p>
+        )}
       </section>
 
       {/* ---------- Goals ---------- */}

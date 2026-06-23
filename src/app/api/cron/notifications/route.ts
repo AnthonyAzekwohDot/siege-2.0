@@ -8,13 +8,16 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const CRON_SECRET = process.env.CRON_SECRET!;
 
-webPush.setVapidDetails(
-  "mailto:anthonyazekwoh@gmail.com",
-  VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY
-);
-
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Lazy VAPID init: a module-scope setVapidDetails made the production build's
+// page-data collection hard-depend on the VAPID env. Initialise on first use.
+let vapidReady = false;
+function ensureVapid() {
+  if (vapidReady) return;
+  webPush.setVapidDetails("mailto:anthonyazekwoh@gmail.com", VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+  vapidReady = true;
+}
 
 // Workout schedule focus by day (0=Sunday, 1=Monday, ... 6=Saturday)
 const WORKOUT_FOCUS: Record<number, string> = {
@@ -28,6 +31,7 @@ const WORKOUT_FOCUS: Record<number, string> = {
 };
 
 async function sendToAllSubscriptions(payload: string): Promise<number> {
+  ensureVapid();
   const { data: subscriptions, error } = await supabase
     .from("push_subscriptions")
     .select("*");
