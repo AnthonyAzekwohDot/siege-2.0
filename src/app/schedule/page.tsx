@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, addDays, startOfWeek } from "date-fns";
 
 import * as queries from "@/lib/queries";
-import { WORKOUT_SCHEDULE, getMorningRoutineForDate } from "@/lib/constants";
+import { WORKOUT_SCHEDULE } from "@/lib/constants";
 import type { DailyLog, DayOfWeek, DaySchedule, Exercise } from "@/lib/types";
 import {
   Dumbbell,
@@ -15,10 +15,6 @@ import {
   Target,
   ChevronDown,
   ChevronUp,
-  Weight,
-  Minus,
-  Plus,
-  Sun,
 } from "lucide-react";
 
 // ============================================================
@@ -55,48 +51,16 @@ function getDateForDay(day: DayOfWeek): string {
 
 // ---------- Exercise Card (inline, collapsible) ----------
 
-function ExerciseCard({
-  exercise,
-  isCompleted,
-  currentWeight,
-  onToggle,
-  onWeightChange,
-}: {
-  exercise: Exercise;
-  isCompleted: boolean;
-  currentWeight: number | undefined;
-  onToggle: () => void;
-  onWeightChange: (weight: number) => void;
-}) {
+// Read-only planner card. Logging happens on the Home tab (one source of truth
+// for completion: daily_logs.exercise_logs).
+function ExerciseCard({ exercise }: { exercise: Exercise }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
     <div className="glass-card p-4">
-      {/* Header row */}
       <div className="flex items-center gap-3">
-        <button
-          onClick={onToggle}
-          className={`w-8 h-8 min-w-[44px] min-h-[44px] rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-            isCompleted
-              ? "bg-[hsl(var(--chart-3))] border-[hsl(var(--chart-3))]"
-              : "border-[hsl(var(--input))]"
-          }`}
-        >
-          {isCompleted && (
-            <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
-              <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          )}
-        </button>
-
         <div className="flex-1 min-w-0">
-          <p
-            className={`text-sm font-semibold ${
-              isCompleted
-                ? "line-through text-[hsl(var(--muted-foreground))]"
-                : "text-[hsl(var(--foreground))]"
-            }`}
-          >
+          <p className="text-sm font-semibold text-[hsl(var(--foreground))]">
             {exercise.name}
           </p>
           <p className="text-xs text-[hsl(var(--muted-foreground))]">
@@ -104,7 +68,6 @@ function ExerciseCard({
           </p>
         </div>
 
-        {/* Muscle group badges */}
         <div className="flex gap-1 flex-wrap justify-end">
           {exercise.muscleGroups?.slice(0, 2).map((mg) => (
             <span
@@ -120,59 +83,28 @@ function ExerciseCard({
           onClick={() => setExpanded(!expanded)}
           className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
         >
-          {expanded ? (
-            <ChevronUp className="w-4 h-4" />
-          ) : (
-            <ChevronDown className="w-4 h-4" />
-          )}
+          {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
       </div>
 
-      {/* Expanded content */}
       {expanded && (
         <div className="mt-4 space-y-3 border-t border-[hsl(var(--border))] pt-3">
-          {/* Form diagram */}
-          {exercise.diagram && (
-            <pre className="text-xs font-mono text-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted))] p-3 rounded-lg overflow-x-auto whitespace-pre">
-              {exercise.diagram.trim()}
-            </pre>
-          )}
-
-          {/* Instructions */}
           {exercise.instructions && (
             <p className="text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">
               {exercise.instructions}
             </p>
           )}
-
-          {/* Weight input */}
-          <div className="flex items-center gap-3">
-            <Weight className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-            <span className="text-sm text-[hsl(var(--muted-foreground))]">
-              Weight:
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() =>
-                  onWeightChange(Math.max(0, (currentWeight ?? 0) - 2.5))
-                }
-                className="w-8 h-8 rounded-lg bg-[hsl(var(--muted))] flex items-center justify-center text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] transition-colors"
-              >
-                <Minus className="w-3 h-3" />
-              </button>
-              <span className="text-sm font-bold text-[hsl(var(--foreground))] min-w-[60px] text-center">
-                {currentWeight ?? 0} kg
-              </span>
-              <button
-                onClick={() =>
-                  onWeightChange((currentWeight ?? 0) + 2.5)
-                }
-                className="w-8 h-8 rounded-lg bg-[hsl(var(--muted))] flex items-center justify-center text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] transition-colors"
-              >
-                <Plus className="w-3 h-3" />
-              </button>
-            </div>
-          </div>
+          {exercise.homeAlt && (
+            <p className="text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">
+              <span className="font-semibold text-[hsl(var(--foreground))]">Home (15kg): </span>
+              {exercise.homeAlt}
+            </p>
+          )}
+          {exercise.diagram && (
+            <pre className="text-xs font-mono text-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted))] p-3 rounded-lg overflow-x-auto whitespace-pre">
+              {exercise.diagram.trim()}
+            </pre>
+          )}
         </div>
       )}
     </div>
@@ -250,38 +182,6 @@ export default function SchedulePage() {
     [selectedDay]
   );
 
-  const morningRoutine = useMemo(
-    () => getMorningRoutineForDate(dateKey),
-    [dateKey]
-  );
-
-  const updateWeightMutation = useMutation<DailyLog, Error, { exerciseName: string; weight: number }, { previous?: DailyLog }>({
-    mutationFn: ({ exerciseName, weight }) =>
-      queries.updateExerciseWeight(dateKey, exerciseName, weight),
-    onMutate: async ({ exerciseName, weight }) => {
-      await queryClient.cancelQueries({ queryKey: ["daily-log", dateKey] });
-      const previous = queryClient.getQueryData<DailyLog>(["daily-log", dateKey]);
-      if (previous) {
-        queryClient.setQueryData(["daily-log", dateKey], {
-          ...previous,
-          exercise_weights: {
-            ...previous.exercise_weights,
-            [exerciseName]: weight,
-          },
-        });
-      }
-      return { previous };
-    },
-    onError: (_err, _arg, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["daily-log", dateKey], context.previous);
-      }
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData(["daily-log", dateKey], data);
-    },
-  });
-
   const toggleMorningWalkMutation = useMutation<DailyLog, Error, void, { previous?: DailyLog }>({
     mutationFn: () => queries.toggleMorningWalk(dateKey),
     onMutate: async () => {
@@ -318,32 +218,6 @@ export default function SchedulePage() {
       if (context?.previous) queryClient.setQueryData(["daily-log", dateKey], context.previous);
     },
     onSuccess: (data) => { queryClient.setQueryData(["daily-log", dateKey], data); },
-  });
-
-  const toggleExerciseMutation = useMutation<DailyLog, Error, string, { previous?: DailyLog }>({
-    mutationFn: (exerciseName) => queries.toggleExercise(dateKey, exerciseName),
-    onMutate: async (exerciseName) => {
-      await queryClient.cancelQueries({ queryKey: ["daily-log", dateKey] });
-      const previous = queryClient.getQueryData<DailyLog>(["daily-log", dateKey]);
-      if (previous) {
-        const isCompleted = previous.completed_exercises.includes(exerciseName);
-        queryClient.setQueryData(["daily-log", dateKey], {
-          ...previous,
-          completed_exercises: isCompleted
-            ? previous.completed_exercises.filter((e) => e !== exerciseName)
-            : [...previous.completed_exercises, exerciseName],
-        });
-      }
-      return { previous };
-    },
-    onError: (_err, _arg, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["daily-log", dateKey], context.previous);
-      }
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData(["daily-log", dateKey], data);
-    },
   });
 
   // Loading
@@ -392,33 +266,6 @@ export default function SchedulePage() {
         </div>
       )}
 
-      {/* ---------- Morning Routine ---------- */}
-      {morningRoutine && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 px-1">
-            <Sun className="w-4 h-4 text-amber-500" />
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
-              Morning — {morningRoutine.label}: {morningRoutine.focus}
-            </h3>
-          </div>
-          {morningRoutine.exercises.map((exercise) => (
-            <ExerciseCard
-              key={exercise.name}
-              exercise={exercise}
-              isCompleted={dailyLog.completed_exercises.includes(exercise.name)}
-              currentWeight={dailyLog.exercise_weights[exercise.name]}
-              onToggle={() => toggleExerciseMutation.mutate(exercise.name)}
-              onWeightChange={(weight) =>
-                updateWeightMutation.mutate({
-                  exerciseName: exercise.name,
-                  weight,
-                })
-              }
-            />
-          ))}
-        </div>
-      )}
-
       {/* ---------- Rest Day Empty State ---------- */}
       {schedule?.isRestDay && schedule.exercises.length === 0 && (
         <div className="glass-card p-8 text-center">
@@ -439,19 +286,7 @@ export default function SchedulePage() {
             Exercises
           </h3>
           {schedule.exercises.map((exercise) => (
-            <ExerciseCard
-              key={exercise.name}
-              exercise={exercise}
-              isCompleted={dailyLog.completed_exercises.includes(exercise.name)}
-              currentWeight={dailyLog.exercise_weights[exercise.name]}
-              onToggle={() => toggleExerciseMutation.mutate(exercise.name)}
-              onWeightChange={(weight) =>
-                updateWeightMutation.mutate({
-                  exerciseName: exercise.name,
-                  weight,
-                })
-              }
-            />
+            <ExerciseCard key={exercise.name} exercise={exercise} />
           ))}
         </div>
       )}

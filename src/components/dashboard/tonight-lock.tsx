@@ -13,11 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Moon, Utensils, Footprints } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as queries from "@/lib/queries";
-import {
-  calculateBMR,
-  calculateTDEE,
-  calculateDailyBudget,
-} from "@/lib/calculations";
+import { calculateDailyBudget } from "@/lib/calculations";
 import type { InsertMeal } from "@/lib/types";
 
 export function TonightLock() {
@@ -43,10 +39,9 @@ export function TonightLock() {
   const derived = React.useMemo(() => {
     if (!dailyLog || !userProfile || !nutritionSummary) return null;
 
-    const bmr = calculateBMR(userProfile.weight_kg, userProfile.height_cm, userProfile.age, userProfile.sex);
-    const tdee = calculateTDEE(bmr, userProfile.activity_level);
-    const totalExerted = nutritionSummary.exertions.reduce((s, e) => s + e.calories, 0);
-    const budget = calculateDailyBudget(tdee, userProfile.deficit_target, totalExerted);
+    // One source of truth: the day's frozen TDEE snapshot, shared with the
+    // nutrition page and the cron, so every surface quotes the same number.
+    const budget = calculateDailyBudget(nutritionSummary.tdee_snapshot, nutritionSummary.deficit_target_snapshot);
     const totalEaten = dailyLog.meals.reduce((s, m) => s + m.calories, 0);
     const remaining = budget - totalEaten;
 

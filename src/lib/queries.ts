@@ -20,6 +20,7 @@ import type {
   UpdateUserProfile,
   ExertionEntry,
   Meal,
+  SetEntry,
 } from "@/lib/types";
 
 // ============ DAILY LOGS ============
@@ -143,28 +144,9 @@ export async function deleteMeal(date: string, mealId: string): Promise<DailyLog
   return data as DailyLog;
 }
 
-export async function toggleExercise(date: string, exerciseName: string): Promise<DailyLog> {
-  const log = await fetchDailyLog(date);
-
-  const isCompleted = log.completed_exercises.includes(exerciseName);
-  const updatedExercises = isCompleted
-    ? log.completed_exercises.filter((e) => e !== exerciseName)
-    : [...log.completed_exercises, exerciseName];
-
-  const { data, error } = await supabase
-    .from("daily_logs")
-    .update({ completed_exercises: updatedExercises })
-    .eq("date", date)
-    .select()
-    .single();
-
-  if (error) throw error;
-
-  const caloriesPerExercise = 50;
-  await syncWorkoutExertion(date, exerciseName, caloriesPerExercise, !isCompleted);
-
-  return data as DailyLog;
-}
+// Exercise completion is derived from per-set logs (see upsertSet). The old
+// direct completed_exercises toggle was removed so there is ONE writer and no
+// way to bypass the set-log invariant.
 
 export async function toggleMorningWalk(date: string): Promise<DailyLog> {
   const log = await fetchDailyLog(date);
@@ -208,22 +190,6 @@ export async function toggleFruit(date: string): Promise<DailyLog> {
   const { data, error } = await supabase
     .from("daily_logs")
     .update({ fruit_eaten: !log.fruit_eaten })
-    .eq("date", date)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as DailyLog;
-}
-
-export async function updateExerciseWeight(date: string, exerciseName: string, weight: number): Promise<DailyLog> {
-  const log = await fetchDailyLog(date);
-
-  const updatedWeights = { ...log.exercise_weights, [exerciseName]: weight };
-
-  const { data, error } = await supabase
-    .from("daily_logs")
-    .update({ exercise_weights: updatedWeights })
     .eq("date", date)
     .select()
     .single();
@@ -865,11 +831,12 @@ export async function getTonightLockStatus(today: string): Promise<{
   const summary = await getOrCreateNutritionSummary(today);
 
   const totalCaloriesEaten = log.meals.reduce((sum, m) => sum + m.calories, 0);
-  const totalExertion = summary.exertions.reduce((sum, e) => sum + e.calories, 0);
-  const budget = summary.tdee_snapshot - summary.deficit_target_snapshot + totalExertion;
+  // Activity is already inside TDEE, so exertion is NOT added back to the budget
+  // or the deficit. Budget = maintenance - target deficit; net deficit = maintenance - eaten.
+  const budget = summary.tdee_snapshot - summary.deficit_target_snapshot;
   const remainingCalories = budget - totalCaloriesEaten;
 
-  const netDeficit = (summary.tdee_snapshot + totalExertion) - totalCaloriesEaten;
+  const netDeficit = summary.tdee_snapshot - totalCaloriesEaten;
   const isOnTrack = netDeficit >= summary.deficit_target_snapshot;
 
   let deficitStatus: string;
@@ -900,4 +867,78 @@ export async function logSafeMeal(date: string, name: string, calories: number):
 
 export async function logWalkPreset(date: string, name: string, calories: number): Promise<void> {
   await addExertion(date, { label: name, calories });
+}
+
+// ============ EXERCISE SET LOGGING (progressive overload) ============
+
+export interface ExerciseSession {
+  date: string;
+  sets: SetEntry[];
+}
+
+/** Write one set into today's per-exercise log and re-derive completion.
+ *  Requires the exercise_logs JSONB column (see supabase/migrations). */
+export async function upsertSet(
+  date: string,
+  exerciseName: string,
+  setIndex: number,
+  entry: SetEntry
+): Promise<DailyLog> {
+  const log = await fetchDailyLog(date);
+
+  const logs: Record<string, SetEntry[]> = { ...(log.exercise_logs ?? {}) };
+  const sets = [...(logs[exerciseName] ?? [])];
+  sets[setIndex] = entry;
+  logs[exerciseName] = sets;
+
+  // Completion is derived: an exercise is "done" when any of its sets is done.
+  const anyDone = sets.some((s) => s && s.done);
+  let completed = log.completed_exercises;
+  if (anyDone && !completed.includes(exerciseName)) {
+    completed = [...completed, exerciseName];
+  } else if (!anyDone && completed.includes(exerciseName)) {
+    completed = completed.filter((e) => e !== exerciseName);
+  }
+
+  const { data, error } = await supabase
+    .from("daily_logs")
+    .update({ exercise_logs: logs, completed_exercises: completed })
+    .eq("date", date)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as DailyLog;
+}
+
+/** Recent sessions that logged this exercise, newest first.
+ *  Degrades to [] if the exercise_logs column does not exist yet. */
+export async function getExerciseHistory(exerciseName: string, days = 90): Promise<ExerciseSession[]> {
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+  const startDateStr = localDateStr(startDate);
+
+  const { data, error } = await supabase
+    .from("daily_logs")
+    .select("date, exercise_logs")
+    .gte("date", startDateStr)
+    .order("date", { ascending: false });
+
+  if (error) {
+    // Only swallow "column does not exist" (pre-migration). Surface everything
+    // else so real DB/network/permission failures are not hidden.
+    const code = (error as { code?: string }).code;
+    const msg = (error as { message?: string }).message ?? "";
+    if (code === "42703" || /exercise_logs/.test(msg)) return [];
+    throw error;
+  }
+
+  const sessions: ExerciseSession[] = [];
+  for (const row of (data ?? []) as { date: string; exercise_logs?: Record<string, SetEntry[]> }[]) {
+    const sets = row.exercise_logs?.[exerciseName];
+    if (sets && sets.length > 0 && sets.some((s) => s && (s.reps != null || s.load != null))) {
+      sessions.push({ date: row.date, sets });
+    }
+  }
+  return sessions;
 }

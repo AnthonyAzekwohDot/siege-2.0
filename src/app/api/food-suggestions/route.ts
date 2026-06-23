@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { sameOriginGuard } from "@/lib/api-guard";
 
 interface PreviousMeal {
   description: string;
@@ -13,6 +14,9 @@ interface SuggestionItem {
 }
 
 export async function POST(request: NextRequest) {
+  const blocked = sameOriginGuard(request);
+  if (blocked) return blocked;
+
   const apiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {

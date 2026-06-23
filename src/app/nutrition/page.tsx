@@ -6,8 +6,6 @@ import { format, subDays } from "date-fns";
 
 import * as queries from "@/lib/queries";
 import {
-  calculateBMR,
-  calculateTDEE,
   calculateDailyBudget,
   calculateNetDeficit,
   isOnTrack,
@@ -79,21 +77,18 @@ export default function NutritionPage() {
   const deficitData = useMemo(() => {
     if (!nutritionSummary || !dailyLog || !userProfile) return null;
 
-    const bmr = calculateBMR(
-      userProfile.weight_kg,
-      userProfile.height_cm,
-      userProfile.age,
-      userProfile.sex
-    );
-    const tdee = calculateTDEE(bmr, userProfile.activity_level);
+    // Read the day's frozen snapshot so every surface agrees on one TDEE.
+    const tdee = nutritionSummary.tdee_snapshot;
+    const deficitTarget = nutritionSummary.deficit_target_snapshot;
     const totalEaten = dailyLog.meals.reduce((sum, m) => sum + m.calories, 0);
     const totalExerted = nutritionSummary.exertions.reduce(
       (sum, e) => sum + e.calories,
       0
     );
-    const budget = calculateDailyBudget(tdee, userProfile.deficit_target, totalExerted);
-    const netDeficit = calculateNetDeficit(tdee, totalExerted, totalEaten);
-    const onTrack = isOnTrack(netDeficit, userProfile.deficit_target);
+    // Activity is already in TDEE: exertion is shown for record only, never added back.
+    const budget = calculateDailyBudget(tdee, deficitTarget);
+    const netDeficit = calculateNetDeficit(tdee, totalEaten);
+    const onTrack = isOnTrack(netDeficit, deficitTarget);
 
     return {
       tdee,
@@ -102,7 +97,7 @@ export default function NutritionPage() {
       budget,
       netDeficit,
       onTrack,
-      deficitTarget: userProfile.deficit_target,
+      deficitTarget,
       remaining: budget - totalEaten,
     };
   }, [nutritionSummary, dailyLog, userProfile]);
@@ -121,12 +116,7 @@ export default function NutritionPage() {
       }
 
       const eaten = log.meals.reduce((s, m) => s + m.calories, 0);
-      const exerted = summary.exertions.reduce((s, e) => s + e.calories, 0);
-      const deficit = calculateNetDeficit(
-        summary.tdee_snapshot,
-        exerted,
-        eaten
-      );
+      const deficit = calculateNetDeficit(summary.tdee_snapshot, eaten);
 
       return { date, deficit, hasData: true };
     });
@@ -302,10 +292,10 @@ export default function NutritionPage() {
               </div>
               <div className="p-3 rounded-lg bg-[hsl(var(--muted))]">
                 <p className="text-xs text-[hsl(var(--muted-foreground))] mb-0.5">
-                  Exerted
+                  Active
                 </p>
-                <p className="text-lg font-bold text-[hsl(var(--chart-3))]">
-                  +{deficitData.totalExerted.toLocaleString()}
+                <p className="text-lg font-bold text-[hsl(var(--foreground))]">
+                  {deficitData.totalExerted.toLocaleString()}
                 </p>
               </div>
               <div className="p-3 rounded-lg bg-[hsl(var(--muted))]">
@@ -351,6 +341,10 @@ export default function NutritionPage() {
               </div>
               <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
                 Target: {deficitData.deficitTarget.toLocaleString()} cal deficit
+              </p>
+              <p className="text-[11px] leading-snug text-[hsl(var(--muted-foreground))] mt-2">
+                Walks and workouts are already counted in your TDEE. They are not
+                extra calories to eat back.
               </p>
             </div>
 

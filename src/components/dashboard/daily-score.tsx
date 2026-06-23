@@ -9,12 +9,14 @@ import { Activity, Utensils, Dumbbell, Droplets } from "lucide-react";
 interface DailyScoreProps {
   log: DailyLog | undefined;
   date: Date;
+  /** The real deficit budget (TDEE - target). Falls back to the legacy goal. */
+  calorieBudget?: number;
   className?: string;
 }
 
-export function DailyScore({ log, date, className }: DailyScoreProps) {
+export function DailyScore({ log, date, calorieBudget, className }: DailyScoreProps) {
   const totalCalories = log?.meals.reduce((sum, m) => sum + m.calories, 0) ?? 0;
-  const calorieGoal = log?.calories_goal ?? 0;
+  const calorieGoal = calorieBudget ?? log?.calories_goal ?? 0;
   const steps = log?.steps ?? 0;
   const stepsGoal = log?.steps_goal ?? 10000;
   const workoutDone = (log?.completed_exercises?.length ?? 0) > 0;

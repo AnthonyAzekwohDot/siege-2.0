@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { FOOD_DATABASE, findFood, calculateNutrition } from "@/lib/food-database";
+import { sameOriginGuard, rejectByContentLength, MAX_IMAGE_BYTES } from "@/lib/api-guard";
 import type { DetectedFoodItem, PhotoAnalysis } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
+  const blocked = sameOriginGuard(request);
+  if (blocked) return blocked;
+
+  if (rejectByContentLength(request)) {
+    return NextResponse.json({ success: false, error: "Image too large or missing length" }, { status: 413 });
+  }
+
   const apiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
@@ -30,6 +38,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { success: false, error: "imageBase64 is required" },
       { status: 400 }
+    );
+  }
+
+  if (imageBase64.length > MAX_IMAGE_BYTES) {
+    return NextResponse.json(
+      { success: false, error: "Image too large" },
+      { status: 413 }
     );
   }
 

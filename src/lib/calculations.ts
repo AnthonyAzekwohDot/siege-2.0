@@ -7,6 +7,10 @@ export const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
   high: 1.725,
 };
 
+// Movement estimates kept ONLY as a display/record of activity.
+// They are NOT added to the eating budget or the deficit: the activity
+// multiplier above already prices daily walking into TDEE. Eating these
+// back double-counts them and quietly erases the deficit.
 export const WALK_CALORIES = {
   morningWalk: 400,
   eveningWalk: 150,
@@ -24,12 +28,22 @@ export function calculateTDEE(bmr: number, activityLevel: ActivityLevel): number
   return Math.round(bmr * ACTIVITY_MULTIPLIERS[activityLevel]);
 }
 
-export function calculateDailyBudget(tdee: number, deficitTarget: number, exertedCalories: number): number {
-  return tdee - deficitTarget + exertedCalories;
+/**
+ * Daily eating budget = maintenance (TDEE) minus the target deficit.
+ * Activity is ALREADY inside TDEE via the activity multiplier, so exercise,
+ * walks and steps are deliberately NOT added back here. Floored at a safe
+ * minimum so the budget can never collapse to nothing.
+ */
+export function calculateDailyBudget(tdee: number, deficitTarget: number): number {
+  return Math.max(MINIMUM_CALORIE_BUDGET, tdee - deficitTarget);
 }
 
-export function calculateNetDeficit(tdee: number, exertedCalories: number, eatenCalories: number): number {
-  return (tdee + exertedCalories) - eatenCalories;
+/**
+ * The actual deficit achieved today = maintenance minus what was eaten.
+ * Exertion is intentionally excluded (already in TDEE).
+ */
+export function calculateNetDeficit(tdee: number, eatenCalories: number): number {
+  return tdee - eatenCalories;
 }
 
 export function isOnTrack(netDeficit: number, deficitTarget: number): boolean {

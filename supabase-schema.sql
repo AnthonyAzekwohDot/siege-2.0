@@ -63,7 +63,11 @@ CREATE INDEX IF NOT EXISTS idx_daily_logs_date ON daily_logs(date);
 CREATE INDEX IF NOT EXISTS idx_mind_logs_date ON mind_logs(date);
 CREATE INDEX IF NOT EXISTS idx_nutrition_summaries_date ON daily_nutrition_summaries(date);
 
--- Row Level Security (disabled for single-user app, enable if adding auth)
+-- Row Level Security: ENABLED but intentionally PERMISSIVE (open) for this
+-- single-user, no-auth app. The policies below allow all reads/writes via the
+-- public anon key. This is a deliberate trade-off, NOT "disabled". If this app
+-- ever gains more than one user, replace the USING(true) policies with real
+-- per-user rules or move writes server-side behind a service-role key.
 ALTER TABLE daily_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mind_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
@@ -77,6 +81,10 @@ CREATE POLICY "Allow all for daily_nutrition_summaries" ON daily_nutrition_summa
 
 -- Add weight tracking to daily logs
 ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS weight_kg REAL;
+
+-- Workout engine: per-set logging (progressive overload) + 90-day sprint anchor
+ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS exercise_logs JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS sprint_start_date TEXT;
 
 -- Push notification subscriptions
 CREATE TABLE IF NOT EXISTS push_subscriptions (

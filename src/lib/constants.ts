@@ -1,357 +1,103 @@
 import { differenceInCalendarDays, parseISO } from "date-fns";
 import type {
   DaySchedule,
-  Exercise,
   MindDayPlan,
   MindBlock,
   MindCategory,
   MindKPIConfig,
+  PhaseInfo,
+  TrainingPhase,
   SafeMeal,
   WalkPreset,
 } from "@/lib/types";
 
-// ============ MORNING ROUTINES (A → B → C rotation) ============
-
-export interface MorningRoutine {
-  label: string;
-  focus: string;
-  exercises: Exercise[];
-}
-
-/** Epoch for morning routine rotation — Day A starts here */
-const MORNING_ROUTINE_EPOCH = "2026-03-12";
-
-export const MORNING_ROUTINES: MorningRoutine[] = [
-  {
-    label: "Day A",
-    focus: "Push & Shoulders",
-    exercises: [
-      {
-        name: "DB Overhead Press",
-        sets: 3,
-        reps: "10",
-        completed: false,
-        instructions: "Standing, press dumbbells overhead. Full lockout. Control the descent.",
-        muscleGroups: ["shoulders", "triceps"],
-        caloriesPerSet: 10,
-      },
-      {
-        name: "Push-ups (slow, 3s lower)",
-        sets: 3,
-        reps: "12-15",
-        completed: false,
-        instructions: "Full range push-ups. Lower for a full 3 seconds. Chest to floor. Explode up.",
-        muscleGroups: ["chest", "triceps", "shoulders"],
-        caloriesPerSet: 12,
-      },
-      {
-        name: "DB Lateral Raises",
-        sets: 3,
-        reps: "12",
-        completed: false,
-        instructions: "Raise dumbbells to sides, slight bend in elbows. Lead with elbows. Pause at top.",
-        muscleGroups: ["lateral delts"],
-        caloriesPerSet: 7,
-      },
-    ],
-  },
-  {
-    label: "Day B",
-    focus: "Arms & Core",
-    exercises: [
-      {
-        name: "DB Curls",
-        sets: 3,
-        reps: "12",
-        completed: false,
-        instructions: "Standing, curl dumbbells with control. No swinging. Squeeze at the top.",
-        muscleGroups: ["biceps"],
-        caloriesPerSet: 8,
-      },
-      {
-        name: "Diamond Push-ups",
-        sets: 3,
-        reps: "10-12",
-        completed: false,
-        instructions: "Hands close together in diamond shape. Elbows tight to body. Focus on triceps.",
-        muscleGroups: ["triceps", "chest"],
-        caloriesPerSet: 12,
-      },
-      {
-        name: "Dead Bugs (slow)",
-        sets: 3,
-        reps: "10/side",
-        completed: false,
-        instructions: "Lie on back, extend opposite arm and leg. Keep lower back pressed to floor. Slow and controlled.",
-        muscleGroups: ["core", "deep abs"],
-        caloriesPerSet: 6,
-      },
-      {
-        name: "Plank (max hold)",
-        sets: 1,
-        reps: "max",
-        completed: false,
-        instructions: "Forearms on floor, body straight. Squeeze glutes and abs. No sagging hips. Hold as long as possible.",
-        muscleGroups: ["core", "shoulders"],
-        caloriesPerSet: 8,
-      },
-    ],
-  },
-  {
-    label: "Day C",
-    focus: "Posture & Pull",
-    exercises: [
-      {
-        name: "DB Bent-over Rows",
-        sets: 3,
-        reps: "10",
-        completed: false,
-        instructions: "Bent at hips, pull dumbbells to hip. Squeeze shoulder blades together. Control down.",
-        muscleGroups: ["lats", "rhomboids", "biceps"],
-        caloriesPerSet: 10,
-      },
-      {
-        name: "DB Romanian Deadlifts",
-        sets: 3,
-        reps: "10",
-        completed: false,
-        instructions: "Hinge at hips, dumbbells slide down legs. Feel the hamstring stretch. Squeeze glutes to stand.",
-        muscleGroups: ["hamstrings", "glutes", "lower back"],
-        caloriesPerSet: 12,
-      },
-      {
-        name: "Reverse Snow Angels",
-        sets: 3,
-        reps: "12",
-        completed: false,
-        instructions: "Lying face down, arms sweep from sides to overhead and back. Squeeze upper back throughout.",
-        muscleGroups: ["upper back", "rear delts", "traps"],
-        caloriesPerSet: 6,
-      },
-      {
-        name: "Hollow Body Hold",
-        sets: 3,
-        reps: "20sec",
-        completed: false,
-        instructions: "Lie on back, arms overhead, legs straight and off the floor. Press lower back into floor. Hold.",
-        muscleGroups: ["core", "deep abs"],
-        caloriesPerSet: 7,
-      },
-    ],
-  },
-];
-
-/** Get the morning routine (A/B/C) for a given date string (yyyy-MM-dd) */
-export function getMorningRoutineForDate(dateStr: string): MorningRoutine {
-  const days = differenceInCalendarDays(parseISO(dateStr), parseISO(MORNING_ROUTINE_EPOCH));
-  // Ensure positive modulo
-  const index = ((days % 3) + 3) % 3;
-  return MORNING_ROUTINES[index];
-}
-
-// ============ WORKOUT SCHEDULE ============
+// ============ WORKOUT SCHEDULE (4-day Upper/Lower, home 15kg + gym) ============
+// Legs are a named half of the week, push/pull is balanced posterior-favoured,
+// and hard pressing is one quality day. Daily movement is the WALK, not push-ups.
+// Each loaded lift carries a repRange for double progression; homeAlt explains
+// how to keep it hard with fixed 15kg dumbbells once load tops out.
 
 export const WORKOUT_SCHEDULE: DaySchedule[] = [
   {
     day: "monday",
-    focus: "Chest + Front Delts + Core",
-    purpose: "Build pressing strength and anterior chain density",
+    focus: "Lower A — Quads + Hams",
+    purpose: "The leg day that was missing. Knee-dominant lead.",
     morningWalk: true,
     eveningWalk: true,
     isRestDay: false,
     isOptional: false,
     exercises: [
-      {
-        name: "DB Floor Press",
-        sets: 4,
-        reps: "10",
-        completed: false,
-        instructions: "Lie on floor, press dumbbells up. Elbows touch floor each rep. Squeeze chest at top.",
-        muscleGroups: ["chest", "triceps"],
-        diagram: `
-    O
-   /|\\
-  / | \\
- [DB] [DB]
-    |
-   / \\
-  /   \\
-(flat on floor)`,
-        caloriesPerSet: 12,
-      },
-      {
-        name: "Incline Push-Up",
-        sets: 3,
-        reps: "max",
-        completed: false,
-        instructions: "Hands on elevated surface (bed/chair). Full range of motion. Chest to surface each rep.",
-        muscleGroups: ["upper chest", "shoulders", "triceps"],
-        diagram: `
-     O
-    /|
-   / |\\
-  /  | \\
- /   |  \\
-/    |   \\
---------[surface]`,
-        caloriesPerSet: 15,
-      },
-      {
-        name: "DB Squeeze Press",
-        sets: 3,
-        reps: "12",
-        completed: false,
-        instructions: "Press dumbbells together throughout the movement. Squeeze hard. Slow on the way down.",
-        muscleGroups: ["inner chest", "triceps"],
-        diagram: `
-    O
-   /|\\
-  [DB|DB]
-    |
-   / \\
-  /   \\
-(flat on floor)`,
-        caloriesPerSet: 10,
-      },
-      {
-        name: "DB Front Raises",
-        sets: 3,
-        reps: "15",
-        completed: false,
-        instructions: "Standing, raise dumbbells in front to shoulder height. Control the negative. No swinging.",
-        muscleGroups: ["front delts"],
-        diagram: `
-    O
-   /|\\
-  / | \\
-[DB]|[DB]
-    |    --> raise to shoulder height
-   / \\
-  /   \\`,
-        caloriesPerSet: 8,
-      },
-      {
-        name: "Dead Bug",
-        sets: 3,
-        reps: "12",
-        completed: false,
-        instructions: "Lie on back, extend opposite arm and leg. Keep lower back pressed to floor. Alternate sides.",
+      { name: "Goblet Squat", sets: 4, reps: "8-12", repRange: [8, 12], completed: false,
+        instructions: "Hold one dumbbell at your chest. Sit down between your hips, knees track over toes, chest tall. Drive through mid-foot.",
+        muscleGroups: ["quads", "glutes"],
+        homeAlt: "15kg goblet. When 4x12 is easy, elevate your heels or add a 3s descent and a 2s pause at the bottom before buying load.",
+        caloriesPerSet: 12 },
+      { name: "DB Walking Lunge", sets: 3, reps: "10/leg", repRange: [10, 12], completed: false,
+        instructions: "Long step, drop the back knee toward the floor, push through the front heel to stand. Stay tall.",
+        muscleGroups: ["quads", "glutes"],
+        homeAlt: "A 15kg in each hand, or one 15kg held at the chest. Slow the descent to add difficulty.",
+        caloriesPerSet: 12 },
+      { name: "DB Romanian Deadlift", sets: 4, reps: "10-12", repRange: [10, 12], completed: false,
+        instructions: "Soft knees, push the hips back, dumbbells slide down the thighs. Feel the hamstring stretch, squeeze glutes to stand. Flat back throughout.",
+        muscleGroups: ["hamstrings", "glutes"],
+        homeAlt: "Both 15kg with a 3s eccentric. When easy, switch to single-leg RDL to double the load per leg.",
+        caloriesPerSet: 12 },
+      { name: "DB Standing Calf Raise", sets: 4, reps: "12-20", repRange: [12, 20], completed: false,
+        instructions: "Up onto the toes, full stretch at the bottom, pause and squeeze at the top. Control, no bouncing.",
+        muscleGroups: ["calves"],
+        homeAlt: "One 15kg, one leg at a time, off a step for full range.",
+        caloriesPerSet: 6 },
+      { name: "Dead Bug", sets: 3, reps: "10/side", completed: false, isBodyweight: true,
+        instructions: "On your back, lower back pressed flat. Extend the opposite arm and leg slowly, return, alternate. No arching.",
         muscleGroups: ["core", "deep abs"],
-        diagram: `
-  \\O/
-   |
-  /|\\
- / | \\
-(arms + legs extend opposite)`,
-        caloriesPerSet: 6,
-      },
+        caloriesPerSet: 6 },
     ],
   },
   {
     day: "tuesday",
-    focus: "Walk Only (Active Recovery)",
-    purpose: "Let muscles recover while keeping metabolism active",
-    morningWalk: true,
-    eveningWalk: true,
-    isRestDay: true,
-    isOptional: false,
-    exercises: [],
-  },
-  {
-    day: "wednesday",
-    focus: "Shoulders + Upper Chest + Obliques",
-    purpose: "Build shoulder width and upper chest shelf",
+    focus: "Upper A — Pull Lead",
+    purpose: "Pull-led to undo the front-dominant posture.",
     morningWalk: true,
     eveningWalk: true,
     isRestDay: false,
     isOptional: false,
     exercises: [
-      {
-        name: "DB Shoulder Press",
-        sets: 4,
-        reps: "10",
-        completed: false,
-        instructions: "Seated or standing, press dumbbells overhead. Full lockout at top. Control the descent.",
+      { name: "One-Arm DB Row", sets: 4, reps: "10-12/side", repRange: [10, 12], completed: false,
+        instructions: "Hand and knee on a bench/bed, flat back. Pull the dumbbell to your hip, squeeze the shoulder blade, control it down. No twisting.",
+        muscleGroups: ["lats", "rhomboids", "biceps"],
+        homeAlt: "15kg, add a 1s pause at the top. When easy, slow the eccentric to 3s.",
+        caloriesPerSet: 12 },
+      { name: "Chest-Supported DB Row", sets: 3, reps: "10-15", repRange: [10, 15], completed: false,
+        instructions: "Chest on an incline (bench/sofa arm). Row both dumbbells to the ribs, elbows about 45 degrees, squeeze the mid-back.",
+        muscleGroups: ["mid-back", "rear delts"],
+        homeAlt: "Both 15kg. Pause at the top each rep to make it bite.",
+        caloriesPerSet: 10 },
+      { name: "DB Overhead Press", sets: 3, reps: "8-12", repRange: [8, 12], completed: false,
+        instructions: "Press from the shoulder to full lockout, ribs down (do not arch the back), control the descent.",
         muscleGroups: ["shoulders", "triceps"],
-        diagram: `
-  [DB] [DB]
-    \\O/
-     |
-    / \\
-   /   \\
-(press overhead)`,
-        caloriesPerSet: 12,
-      },
-      {
-        name: "Lateral Raises",
-        sets: 5,
-        reps: "12-20",
-        completed: false,
-        instructions: "Raise dumbbells to sides, slight bend in elbows. Lead with elbows. Pause at top.",
+        homeAlt: "Both 15kg. Seated with a tall back and slow tempo, or single-arm for more load.",
+        caloriesPerSet: 10 },
+      { name: "DB Reverse Fly", sets: 3, reps: "12-20", repRange: [12, 20], completed: false,
+        instructions: "Hinge over, soft elbows, raise the dumbbells out to the sides leading with the elbows. Squeeze the rear delts. Light and strict.",
+        muscleGroups: ["rear delts", "rhomboids"],
+        homeAlt: "Lighter than 15kg if needed; this is a quality move, not a load move.",
+        caloriesPerSet: 6 },
+      { name: "DB Lateral Raise", sets: 3, reps: "12-20", repRange: [12, 20], completed: false,
+        instructions: "Slight bend in the elbows, raise to shoulder height leading with the elbows, pause, lower slowly.",
         muscleGroups: ["lateral delts"],
-        diagram: `
-[DB]--O--[DB]
-      |
-     / \\
-    /   \\
-(arms out to sides)`,
-        caloriesPerSet: 7,
-      },
-      {
-        name: "Incline Fly (floor with pillow)",
-        sets: 3,
-        reps: "12",
-        completed: false,
-        instructions: "Lie on floor with pillow under upper back. Open arms wide, squeeze chest to close. Slow negatives.",
-        muscleGroups: ["upper chest", "front delts"],
-        diagram: `
-    O
-   /|\\
-  / | \\
-[DB] [DB]  <-- open wide
-    |
-   / \\
-[pillow under back]`,
-        caloriesPerSet: 8,
-      },
-      {
-        name: "Shrugs",
-        sets: 3,
-        reps: "12",
-        completed: false,
-        instructions: "Hold heavy dumbbells at sides. Shrug shoulders to ears. Hold at top for 1 second.",
-        muscleGroups: ["traps"],
-        diagram: `
-    O
-  --|--
-  | | |
-[DB]|[DB]
-   / \\
-  /   \\
-(shrug up to ears)`,
-        caloriesPerSet: 6,
-      },
-      {
-        name: "Russian Twists",
-        sets: 3,
-        reps: "20",
-        completed: false,
-        instructions: "Seated, lean back 45 degrees. Rotate torso side to side. Hold weight or bodyweight. Feet off floor.",
-        muscleGroups: ["obliques", "core"],
-        diagram: `
-    O
-   /|\\  <-- rotate
-    |
-   / \\
-  (feet off floor)`,
-        caloriesPerSet: 8,
-      },
+        homeAlt: "15kg or lighter. Add lengthened partials at the bottom when you hit the top of the range.",
+        caloriesPerSet: 6 },
+      { name: "DB Hammer Curl", sets: 3, reps: "8-12", repRange: [8, 12], completed: false,
+        instructions: "Neutral grip (thumbs up), curl without swinging, squeeze, lower under control.",
+        muscleGroups: ["biceps", "forearms"],
+        homeAlt: "Both 15kg. Slow eccentric or a pause at the top when easy.",
+        caloriesPerSet: 7 },
     ],
   },
   {
-    day: "thursday",
-    focus: "Walk Only (Metabolic Day)",
-    purpose: "Active recovery to boost metabolism and fat burning",
+    day: "wednesday",
+    focus: "Walk Only — Recovery",
+    purpose: "True rest. Steady-state walk, inhaler nearby.",
     morningWalk: true,
     eveningWalk: true,
     isRestDay: true,
@@ -359,161 +105,123 @@ export const WORKOUT_SCHEDULE: DaySchedule[] = [
     exercises: [],
   },
   {
-    day: "friday",
-    focus: "Back + Chest Density + Core",
-    purpose: "Build back thickness and chest endurance",
+    day: "thursday",
+    focus: "Lower B — Hips + Unilateral",
+    purpose: "Single-leg strength and posterior chain.",
     morningWalk: true,
     eveningWalk: true,
     isRestDay: false,
     isOptional: false,
     exercises: [
-      {
-        name: "DB Rows",
-        sets: 4,
-        reps: "12/side",
-        completed: false,
-        instructions: "One arm at a time, support on bench/bed. Pull to hip. Squeeze shoulder blade. Control down.",
+      { name: "DB Bulgarian Split Squat", sets: 4, reps: "8-10/leg", repRange: [8, 10], completed: false,
+        instructions: "Rear foot on a chair/bed. Drop straight down over the front leg, knee tracks the toes, push through the front heel. Stay upright.",
+        muscleGroups: ["quads", "glutes"],
+        homeAlt: "15kg in each hand. Brutal at bodyweight first; add load only when 4x10/leg is clean.",
+        caloriesPerSet: 12 },
+      { name: "Single-Leg DB RDL", sets: 3, reps: "10-12/leg", repRange: [10, 12], completed: false,
+        instructions: "Hinge on one leg, the free leg extends behind, dumbbell(s) lower toward the floor with a flat back. The standing hamstring does the work.",
+        muscleGroups: ["hamstrings", "glutes"],
+        homeAlt: "One or two 15kg. Fingertip on a wall for balance; B-stance RDL is an easier regression.",
+        caloriesPerSet: 12 },
+      { name: "DB Step-Up", sets: 3, reps: "10/leg", repRange: [8, 12], completed: false,
+        instructions: "Onto a bench/sturdy chair. Drive through the top leg's heel, stand tall, lower under control. Minimal push-off from the bottom foot.",
+        muscleGroups: ["quads", "glutes"],
+        homeAlt: "15kg per hand. Raise the step height to progress before adding load.",
+        caloriesPerSet: 10 },
+      { name: "Goblet Squat (burnout)", sets: 3, reps: "12-20", repRange: [12, 20], completed: false,
+        instructions: "Lighter, higher reps, continuous tension. Chase the burn, full depth each rep.",
+        muscleGroups: ["quads", "glutes"],
+        homeAlt: "15kg goblet. Slow tempo to make 20 reps count.",
+        caloriesPerSet: 10 },
+      { name: "DB Seated Calf Raise", sets: 4, reps: "15-25", repRange: [15, 25], completed: false,
+        instructions: "Dumbbell on the knee, raise the heel, full stretch and squeeze. Slow.",
+        muscleGroups: ["calves", "soleus"],
+        homeAlt: "One 15kg on each knee, or one leg at a time.",
+        caloriesPerSet: 5 },
+      { name: "Hollow Body Hold", sets: 3, reps: "20-30s", completed: false, isBodyweight: true,
+        instructions: "On your back, lower back pressed into the floor, arms and legs extended and lifted. Hold. Lower the limbs to make it easier.",
+        muscleGroups: ["core", "deep abs"],
+        caloriesPerSet: 6 },
+    ],
+  },
+  {
+    day: "friday",
+    focus: "Upper B — Press Day",
+    purpose: "The one hard pressing day. Pull stays in to hold the ratio.",
+    morningWalk: true,
+    eveningWalk: true,
+    isRestDay: false,
+    isOptional: false,
+    exercises: [
+      { name: "DB Floor Press", sets: 4, reps: "8-12", repRange: [8, 12], completed: false,
+        instructions: "On the floor, press the dumbbells up and together at the top. Elbows touch the floor each rep (built-in depth control). Squeeze the chest.",
+        muscleGroups: ["chest", "triceps"],
+        homeAlt: "Both 15kg. Add a 2s pause on the floor, or a 3s eccentric, when 4x12 is easy.",
+        caloriesPerSet: 12 },
+      { name: "One-Arm DB Row", sets: 4, reps: "10-12/side", repRange: [10, 12], completed: false,
+        instructions: "Pull to the hip, squeeze the shoulder blade, control down. Keeps total pulling ahead of pressing across the week.",
         muscleGroups: ["lats", "rhomboids", "biceps"],
-        diagram: `
-    O
-   /|
-  / |\\
- /  | [DB]
-/   |
-----|----[bench]
-   / \\`,
-        caloriesPerSet: 12,
-      },
-      {
-        name: "Reverse Fly",
-        sets: 3,
-        reps: "15",
-        completed: false,
-        instructions: "Bent over, raise dumbbells out to sides. Squeeze shoulder blades together. Light weight, high control.",
-        muscleGroups: ["rear delts", "rhomboids"],
-        diagram: `
-      O
-     /|\\
-    / | \\
-[DB]  |  [DB]
-      |
-     / \\
-(bent over at hips)`,
-        caloriesPerSet: 7,
-      },
-      {
-        name: "DB Pullover",
-        sets: 3,
-        reps: "12",
-        completed: false,
-        instructions: "Lie on floor, hold one DB overhead. Lower behind head with straight arms. Pull back over chest.",
-        muscleGroups: ["lats", "chest", "serratus"],
-        diagram: `
-[DB] <-- lower behind head
-  \\
-   O
-   |
-  / \\
- /   \\
-(flat on floor)`,
-        caloriesPerSet: 10,
-      },
-      {
-        name: "Narrow Floor Press",
-        sets: 3,
-        reps: "10",
-        completed: false,
-        instructions: "Floor press with hands closer together. Elbows tucked. Emphasise triceps and inner chest.",
-        muscleGroups: ["inner chest", "triceps"],
-        diagram: `
-    O
-   /|\\
-  [DB|DB]  <-- narrow grip
-    |
-   / \\
-  /   \\
-(flat on floor)`,
-        caloriesPerSet: 10,
-      },
-      {
-        name: "Plank",
-        sets: 3,
-        reps: "45sec",
-        completed: false,
-        instructions: "Forearms on floor, body straight. Squeeze glutes and abs. No sagging hips. Breathe steady.",
-        muscleGroups: ["core", "shoulders"],
-        diagram: `
-    O-----
-   /|     \\
-  / |------\\
- /  |       \\
-(forearms)  (toes)`,
-        caloriesPerSet: 8,
-      },
+        homeAlt: "15kg with a pause at the top.",
+        caloriesPerSet: 12 },
+      { name: "DB Shoulder Press", sets: 3, reps: "8-12", repRange: [8, 12], completed: false,
+        instructions: "Seated or standing, press to lockout, ribs down, control the descent.",
+        muscleGroups: ["shoulders", "triceps"],
+        homeAlt: "Both 15kg, slow tempo, or single-arm for more load.",
+        caloriesPerSet: 10 },
+      { name: "Incline Press / Push-up AMRAP", sets: 2, reps: "max", completed: false, isBodyweight: true,
+        instructions: "Feet-elevated push-ups (or incline DB press), last 2 sets to near failure. LOG THE REP COUNT each set — this is a rep PR you chase.",
+        muscleGroups: ["upper chest", "shoulders", "triceps"],
+        caloriesPerSet: 14 },
+      { name: "DB Lateral Raise", sets: 3, reps: "12-20", repRange: [12, 20], completed: false,
+        instructions: "Strict, lead with the elbows, pause at shoulder height, lower slowly.",
+        muscleGroups: ["lateral delts"],
+        homeAlt: "15kg or lighter, lengthened partials at the bottom when you top the range.",
+        caloriesPerSet: 6 },
+      { name: "DB Curl", sets: 3, reps: "8-12", repRange: [8, 12], completed: false,
+        instructions: "No swing, full range, squeeze at the top, slow on the way down.",
+        muscleGroups: ["biceps"],
+        homeAlt: "Both 15kg, slow eccentric when easy.",
+        caloriesPerSet: 7 },
+      { name: "Skull-Crusher / Diamond Push-up", sets: 3, reps: "10-15", repRange: [10, 15], completed: false,
+        instructions: "Triceps finisher. Skull-crushers lying down (elbows in), or diamond push-ups to failure.",
+        muscleGroups: ["triceps"],
+        homeAlt: "15kg, controlled. Diamond push-ups if there is no room to lie out.",
+        caloriesPerSet: 8 },
     ],
   },
   {
     day: "saturday",
-    focus: "Optional Light Sculpting or Walk Only",
-    purpose: "Light pump work if feeling good, otherwise just walk",
+    focus: "Optional — Pump / Rep-PR",
+    purpose: "Skip freely if recovery is poor. Zero penalty.",
     morningWalk: true,
     eveningWalk: true,
     isRestDay: false,
     isOptional: true,
     exercises: [
-      {
-        name: "Lateral Raises",
-        sets: 3,
-        reps: "20",
-        completed: false,
-        instructions: "Light weight, high reps. Focus on the burn. Slow and controlled.",
-        muscleGroups: ["lateral delts"],
-        diagram: `
-[DB]--O--[DB]
-      |
-     / \\
-    /   \\
-(arms out to sides)`,
-        caloriesPerSet: 7,
-      },
-      {
-        name: "Pushups",
-        sets: 2,
-        reps: "max",
-        completed: false,
-        instructions: "Full range pushups. Chest to floor. Lock out at top. Go to failure.",
+      { name: "Push-up AMRAP", sets: 2, reps: "max", completed: false, isBodyweight: true,
+        instructions: "Two all-out sets. Chase the rep-PR. Full range, chest to floor.",
         muscleGroups: ["chest", "triceps", "shoulders"],
-        diagram: `
-     O
-    /|\\
-   / | \\
-  /  |  \\
- /   |   \\
-/----|----\\
-(hands shoulder width)`,
-        caloriesPerSet: 15,
-      },
-      {
-        name: "Light Core",
-        sets: 1,
-        reps: "5min",
-        completed: false,
-        instructions: "Mix of dead bugs, crunches, and leg raises. Keep it light. 5 minutes continuous.",
+        caloriesPerSet: 15 },
+      { name: "DB Lateral Raise", sets: 3, reps: "15-25", repRange: [15, 25], completed: false,
+        instructions: "Light, high rep, lengthened partials. Chase the burn.",
+        muscleGroups: ["lateral delts"],
+        homeAlt: "15kg or lighter.",
+        caloriesPerSet: 6 },
+      { name: "DB Curl", sets: 3, reps: "12-20", repRange: [12, 20], completed: false,
+        instructions: "High-rep pump. Strict, no swing.",
+        muscleGroups: ["biceps"],
+        homeAlt: "15kg.",
+        caloriesPerSet: 6 },
+      { name: "Light Core", sets: 1, reps: "5min", completed: false, isBodyweight: true,
+        instructions: "Five continuous minutes: dead bugs, hollow holds, leg raises. Keep it honest.",
         muscleGroups: ["core", "abs"],
-        diagram: `
-  \\O/
-   |
-  /|\\
- / | \\
-(various core moves)`,
-        caloriesPerSet: 25,
-      },
+        caloriesPerSet: 25 },
     ],
   },
   {
     day: "sunday",
-    focus: "Rest Walk",
-    purpose: "Full rest day. Walk only for mental clarity.",
+    focus: "Full Rest",
+    purpose: "Complete rest. Walk for clarity if you want.",
     morningWalk: true,
     eveningWalk: true,
     isRestDay: true,
@@ -521,6 +229,44 @@ export const WORKOUT_SCHEDULE: DaySchedule[] = [
     exercises: [],
   },
 ];
+
+// ============ 90-DAY PERIODISATION ============
+// 13 weeks: Base (1-4) -> Build (5-8) -> Deload (9) -> Peak (10-12) -> Deload/Test (13).
+// Deload weeks auto-halve working sets. Anchored to the sprint start date.
+
+const SPRINT_WEEKS = 13;
+
+export function getTrainingPhase(
+  startDate: string | null | undefined,
+  today: string
+): PhaseInfo {
+  if (!startDate) {
+    return { week: 1, day: 1, phase: "base", label: "Base · Week 1", setMultiplier: 1, isDeload: false };
+  }
+
+  const dayIndex = Math.max(0, differenceInCalendarDays(parseISO(today), parseISO(startDate)));
+  const day = dayIndex + 1;
+  const week = Math.min(SPRINT_WEEKS, Math.floor(dayIndex / 7) + 1);
+
+  let phase: TrainingPhase;
+  if (week <= 4) phase = "base";
+  else if (week <= 8) phase = "build";
+  else if (week === 9) phase = "deload";
+  else if (week <= 12) phase = "peak";
+  else phase = "deload"; // week 13: deload + test
+
+  const isDeload = phase === "deload";
+  const labels: Record<TrainingPhase, string> = { base: "Base", build: "Build", deload: "Deload", peak: "Peak" };
+
+  return {
+    week,
+    day,
+    phase,
+    label: `${labels[phase]} · Week ${week}`,
+    setMultiplier: isDeload ? 0.5 : 1,
+    isDeload,
+  };
+}
 
 // ============ MIND SCHEDULE ============
 // Rebuilt for 0.1% mastery. Every block targets specific fundamentals.

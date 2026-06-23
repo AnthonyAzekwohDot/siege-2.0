@@ -7,11 +7,9 @@ import {
   updateSteps,
   addMeal,
   deleteMeal,
-  toggleExercise,
   toggleMorningWalk,
   toggleEveningWalk,
   toggleFruit,
-  updateExerciseWeight,
   updateWater,
   getOrCreateMindLog,
   getAllMindLogs,
@@ -28,8 +26,10 @@ import {
   deleteExertion,
   getDailyLogsHistory,
   generateInsight,
+  upsertSet,
+  getExerciseHistory,
 } from "@/lib/queries";
-import type { InsertMeal, InsertExertion, UpdateUserProfile, MindLogEntry } from "@/lib/types";
+import type { InsertMeal, InsertExertion, UpdateUserProfile, MindLogEntry, SetEntry, DailyLog } from "@/lib/types";
 
 // ============ QUERY HOOKS ============
 
@@ -127,18 +127,6 @@ export function useDeleteMeal() {
   });
 }
 
-export function useToggleExercise() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ date, exerciseName }: { date: string; exerciseName: string }) =>
-      toggleExercise(date, exerciseName),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["daily-log", variables.date] });
-      queryClient.invalidateQueries({ queryKey: ["nutrition-summary", variables.date] });
-    },
-  });
-}
-
 export function useToggleMorningWalk() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -165,17 +153,6 @@ export function useToggleFruit() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ date }: { date: string }) => toggleFruit(date),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["daily-log", variables.date] });
-    },
-  });
-}
-
-export function useUpdateExerciseWeight() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ date, exerciseName, weight }: { date: string; exerciseName: string; weight: number }) =>
-      updateExerciseWeight(date, exerciseName, weight),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["daily-log", variables.date] });
     },
@@ -252,6 +229,58 @@ export function useUpdateUserProfile() {
     mutationFn: (update: UpdateUserProfile) => updateUserProfile(update),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+    },
+  });
+}
+
+export function useExerciseHistory(exerciseName: string, enabled = true) {
+  return useQuery({
+    queryKey: ["exercise-history", exerciseName],
+    queryFn: () => getExerciseHistory(exerciseName),
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useLogSet(date: string) {
+  const queryClient = useQueryClient();
+  return useMutation<
+    DailyLog,
+    Error,
+    { exerciseName: string; setIndex: number; entry: SetEntry },
+    { previous?: DailyLog }
+  >({
+    // Serialize all set writes for the day so the read-modify-write of the
+    // exercise_logs JSONB can't race and drop a set (last-write-wins).
+    scope: { id: `logset-${date}` },
+    mutationFn: ({ exerciseName, setIndex, entry }) =>
+      upsertSet(date, exerciseName, setIndex, entry),
+    onMutate: async ({ exerciseName, setIndex, entry }) => {
+      await queryClient.cancelQueries({ queryKey: ["daily-log", date] });
+      const previous = queryClient.getQueryData<DailyLog>(["daily-log", date]);
+      if (previous) {
+        const logs: Record<string, SetEntry[]> = { ...(previous.exercise_logs ?? {}) };
+        const sets = [...(logs[exerciseName] ?? [])];
+        sets[setIndex] = entry;
+        logs[exerciseName] = sets;
+        const anyDone = sets.some((s) => s && s.done);
+        let completed = previous.completed_exercises;
+        if (anyDone && !completed.includes(exerciseName)) completed = [...completed, exerciseName];
+        else if (!anyDone && completed.includes(exerciseName)) completed = completed.filter((e) => e !== exerciseName);
+        queryClient.setQueryData<DailyLog>(["daily-log", date], {
+          ...previous,
+          exercise_logs: logs,
+          completed_exercises: completed,
+        });
+      }
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(["daily-log", date], context.previous);
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(["daily-log", date], data);
+      queryClient.invalidateQueries({ queryKey: ["exercise-history"] });
     },
   });
 }
