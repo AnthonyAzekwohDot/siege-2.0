@@ -1,19 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import webPush from "web-push";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!;
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY!;
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-webPush.setVapidDetails(
-  "mailto:anthonyazekwoh@gmail.com",
-  VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY
-);
+// Lazy singletons: creating the Supabase client or setting VAPID details at
+// module scope makes the build's page-data collection hard-depend on env. Defer
+// both until the handler actually runs.
+let _supabase: SupabaseClient | null = null;
+function getSupabase() {
+  if (!_supabase) _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  return _supabase;
+}
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let vapidReady = false;
+function ensureVapid() {
+  if (vapidReady) return;
+  try {
+    webPush.setVapidDetails("mailto:anthonyazekwoh@gmail.com", VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+  } catch {
+    /* already initialised (concurrent call) */
+  }
+  vapidReady = true;
+}
 
 export async function POST(request: NextRequest) {
   // Auth check
@@ -22,11 +34,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  ensureVapid();
+
   try {
     const { type, title, body, url } = await request.json();
 
     // Fetch all subscriptions
-    const { data: subscriptions, error } = await supabase
+    const { data: subscriptions, error } = await getSupabase()
       .from("push_subscriptions")
       .select("*");
 
@@ -79,7 +93,7 @@ export async function POST(request: NextRequest) {
 
     // Clean up expired subscriptions
     if (expiredEndpoints.length > 0) {
-      await supabase
+      await getSupabase()
         .from("push_subscriptions")
         .delete()
         .in("endpoint", expiredEndpoints);

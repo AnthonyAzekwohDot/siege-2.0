@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { calculateBMR, calculateTDEE, WALK_CALORIES, CALORIES_PER_STEP } from "@/lib/calculations";
+import { calculateBMR, calculateTDEE, calculateWeightEMA, WALK_CALORIES, CALORIES_PER_STEP } from "@/lib/calculations";
 
 /** Format a Date as yyyy-MM-dd in LOCAL time (not UTC). */
 function localDateStr(d: Date = new Date()): string {
@@ -21,6 +21,7 @@ import type {
   ExertionEntry,
   Meal,
   SetEntry,
+  ArtBenchmark,
 } from "@/lib/types";
 
 // ============ DAILY LOGS ============
@@ -58,7 +59,18 @@ export async function getOrCreateDailyLog(date: string): Promise<DailyLog> {
     .select()
     .single();
 
-  if (insertError) throw insertError;
+  if (insertError) {
+    // Concurrent first-load race: another query inserted this date first.
+    if ((insertError as { code?: string }).code === "23505") {
+      const { data: existing } = await supabase
+        .from("daily_logs")
+        .select("*")
+        .eq("date", date)
+        .single();
+      if (existing) return existing as DailyLog;
+    }
+    throw insertError;
+  }
   return inserted as DailyLog;
 }
 
@@ -238,7 +250,18 @@ export async function getOrCreateMindLog(date: string): Promise<MindDailyLog> {
     .select()
     .single();
 
-  if (insertError) throw insertError;
+  if (insertError) {
+    // Concurrent first-load race (e.g. two tabs).
+    if ((insertError as { code?: string }).code === "23505") {
+      const { data: existing } = await supabase
+        .from("mind_logs")
+        .select("*")
+        .eq("date", date)
+        .single();
+      if (existing) return existing as MindDailyLog;
+    }
+    throw insertError;
+  }
   return inserted as MindDailyLog;
 }
 
@@ -257,6 +280,23 @@ export async function getAllMindLogs(): Promise<MindDailyLog[]> {
   const { data, error } = await supabase
     .from("mind_logs")
     .select("*")
+    .order("date", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as MindDailyLog[];
+}
+
+/** Mind logs within the last `days` (bounded — for the dashboard/progress
+ *  adherence + verdict, which never need the full all-time history). */
+export async function getMindLogsHistory(days: number): Promise<MindDailyLog[]> {
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+  const startDateStr = localDateStr(startDate);
+
+  const { data, error } = await supabase
+    .from("mind_logs")
+    .select("*")
+    .gte("date", startDateStr)
     .order("date", { ascending: false });
 
   if (error) throw error;
@@ -404,7 +444,26 @@ export async function updateUserProfile(update: UpdateUserProfile): Promise<User
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    // If migration 0002 hasn't run yet, the new optional columns don't exist
+    // (42703). Retry without them so the rest of Settings still saves rather
+    // than failing the whole form.
+    if ((error as { code?: string }).code === "42703") {
+      const { goal_weight_kg, protein_floor_g, sprint_start_date, ...rest } = update;
+      void goal_weight_kg;
+      void protein_floor_g;
+      void sprint_start_date;
+      const retry = await supabase
+        .from("user_profiles")
+        .update({ ...rest, updated_at: new Date().toISOString() })
+        .eq("id", "default-user")
+        .select()
+        .single();
+      if (retry.error) throw retry.error;
+      return retry.data as UserProfile;
+    }
+    throw error;
+  }
   return data as UserProfile;
 }
 
@@ -422,7 +481,13 @@ export async function getOrCreateNutritionSummary(date: string): Promise<DailyNu
   if (data) return data as DailyNutritionSummary;
 
   const profile = await getUserProfile();
-  const bmr = calculateBMR(profile.weight_kg, profile.height_cm, profile.age, profile.sex);
+  // TDEE tracks the real body, not a stale profile number: use an EMA of the
+  // last few weeks of logged weights, falling back to the profile weight when
+  // nothing is logged yet. Computed once per day, then frozen into the snapshot.
+  const recentWeights = await getWeightHistory(28);
+  const emaWeight = calculateWeightEMA(recentWeights.map((r) => r.weight_kg));
+  const weightForTDEE = emaWeight ?? profile.weight_kg;
+  const bmr = calculateBMR(weightForTDEE, profile.height_cm, profile.age, profile.sex);
   const tdee = calculateTDEE(bmr, profile.activity_level);
 
   const newSummary: DailyNutritionSummary = {
@@ -439,7 +504,20 @@ export async function getOrCreateNutritionSummary(date: string): Promise<DailyNu
     .select()
     .single();
 
-  if (insertError) throw insertError;
+  if (insertError) {
+    // A concurrent first-load (e.g. dashboard + tonight-lock) may have inserted
+    // this date already (unique violation). Re-read the winning row rather than
+    // surfacing a transient error; the frozen snapshot stays intact.
+    if ((insertError as { code?: string }).code === "23505") {
+      const { data: existing } = await supabase
+        .from("daily_nutrition_summaries")
+        .select("*")
+        .eq("date", date)
+        .single();
+      if (existing) return existing as DailyNutritionSummary;
+    }
+    throw insertError;
+  }
   return inserted as DailyNutritionSummary;
 }
 
@@ -941,4 +1019,45 @@ export async function getExerciseHistory(exerciseName: string, days = 90): Promi
     }
   }
   return sessions;
+}
+
+// ============ ART BENCHMARKS (Day-0/45/90) ============
+
+/** All benchmark captures. Degrades to [] before the art_benchmarks table
+ *  exists (migration 0002), so the rest of the Mind page still renders. */
+export async function getBenchmarks(): Promise<ArtBenchmark[]> {
+  const { data, error } = await supabase
+    .from("art_benchmarks")
+    .select("*")
+    .order("checkpoint", { ascending: true });
+
+  if (error) {
+    const code = (error as { code?: string }).code;
+    const msg = (error as { message?: string }).message ?? "";
+    if (code === "42P01" || /art_benchmarks/.test(msg)) return [];
+    throw error;
+  }
+  return (data ?? []) as ArtBenchmark[];
+}
+
+/** Capture (or replace) the artefact for one checkpoint + prompt. */
+export async function upsertBenchmark(
+  checkpoint: number,
+  promptId: string,
+  artefactUrl: string,
+  note: string,
+  takenOn: string
+): Promise<ArtBenchmark> {
+  // Atomic upsert keyed by the (checkpoint, prompt_id) unique index — no
+  // select-then-insert race and no orphaned second insert under double capture.
+  const { data, error } = await supabase
+    .from("art_benchmarks")
+    .upsert(
+      { checkpoint, prompt_id: promptId, artefact_url: artefactUrl, note, taken_on: takenOn },
+      { onConflict: "checkpoint,prompt_id" }
+    )
+    .select()
+    .single();
+  if (error) throw error;
+  return data as ArtBenchmark;
 }

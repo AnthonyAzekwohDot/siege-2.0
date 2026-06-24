@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import webPush from "web-push";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!;
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY!;
@@ -8,13 +8,25 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const CRON_SECRET = process.env.CRON_SECRET!;
 
-webPush.setVapidDetails(
-  "mailto:anthonyazekwoh@gmail.com",
-  VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY
-);
+// Lazy singletons: creating the Supabase client or setting VAPID details at
+// module scope makes the build's page-data collection hard-depend on env. Defer
+// both until the handler actually runs.
+let _supabase: SupabaseClient | null = null;
+function getSupabase() {
+  if (!_supabase) _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  return _supabase;
+}
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let vapidReady = false;
+function ensureVapid() {
+  if (vapidReady) return;
+  try {
+    webPush.setVapidDetails("mailto:anthonyazekwoh@gmail.com", VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+  } catch {
+    /* already initialised (concurrent call) */
+  }
+  vapidReady = true;
+}
 
 // Workout schedule focus by day (0=Sunday, 1=Monday, ... 6=Saturday)
 const WORKOUT_FOCUS: Record<number, string> = {
@@ -28,7 +40,8 @@ const WORKOUT_FOCUS: Record<number, string> = {
 };
 
 async function sendToAllSubscriptions(payload: string): Promise<number> {
-  const { data: subscriptions, error } = await supabase
+  ensureVapid();
+  const { data: subscriptions, error } = await getSupabase()
     .from("push_subscriptions")
     .select("*");
 
@@ -58,7 +71,7 @@ async function sendToAllSubscriptions(payload: string): Promise<number> {
   );
 
   if (expiredEndpoints.length > 0) {
-    await supabase
+    await getSupabase()
       .from("push_subscriptions")
       .delete()
       .in("endpoint", expiredEndpoints);

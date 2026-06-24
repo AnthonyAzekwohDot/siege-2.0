@@ -7,6 +7,8 @@ import { format } from "date-fns";
 import * as queries from "@/lib/queries";
 import { calculateDailyBudget } from "@/lib/calculations";
 import { WORKOUT_SCHEDULE, getTrainingPhase } from "@/lib/constants";
+import { getSprintProgress, projectFatLoss, defaultProteinFloor, totalProtein } from "@/lib/sprint";
+import { summariseAdherence } from "@/lib/adherence";
 import type { DailyLog, DayOfWeek, InsertMeal, PhotoAnalysis } from "@/lib/types";
 
 import { StepRing } from "@/components/dashboard/step-ring";
@@ -15,12 +17,14 @@ import { WorkoutCard } from "@/components/dashboard/workout-card";
 import { MealForm } from "@/components/dashboard/meal-form";
 import { FoodSearch } from "@/components/dashboard/food-search";
 import { StepInput } from "@/components/dashboard/step-input";
-import { DailyScore } from "@/components/dashboard/daily-score";
+import { LineHeldCard } from "@/components/sprint/line-held-card";
 import { InsightCard } from "@/components/dashboard/insight-card";
 import { TonightLock } from "@/components/dashboard/tonight-lock";
 import { FoodCamera } from "@/components/dashboard/food-camera";
 import { FoodReviewSheet } from "@/components/dashboard/food-review-sheet";
 import { WaterTracker } from "@/components/dashboard/water-tracker";
+import { SprintHeader } from "@/components/sprint/sprint-header";
+import { ProteinBar } from "@/components/sprint/protein-bar";
 
 // ============================================================
 // Dashboard — The main hub
@@ -75,6 +79,24 @@ export default function DashboardPage() {
     queryFn: () => queries.getOrCreateNutritionSummary(dateKey),
   });
 
+  const { data: weightHistory } = useQuery({
+    queryKey: ["weight-history", 90],
+    queryFn: () => queries.getWeightHistory(90),
+  });
+
+  const { data: logsHistory } = useQuery({
+    queryKey: ["daily-logs-history", 95],
+    queryFn: () => queries.getDailyLogsHistory(95),
+  });
+  const { data: summariesHistory } = useQuery({
+    queryKey: ["nutrition-history", 95],
+    queryFn: () => queries.getNutritionSummaries(95),
+  });
+  const { data: mindLogs } = useQuery({
+    queryKey: ["mind-logs-history", 95],
+    queryFn: () => queries.getMindLogsHistory(95),
+  });
+
   // Same calorie budget the Nutrition page and Tonight Lock use, so the
   // dashboard never quotes a different target (2400) than the rest of the app.
   const calorieBudget = useMemo(
@@ -95,6 +117,44 @@ export default function DashboardPage() {
     () => getTrainingPhase(userProfile?.sprint_start_date, dateKey),
     [userProfile?.sprint_start_date, dateKey]
   );
+
+  const sprint = useMemo(
+    () => getSprintProgress(userProfile?.sprint_start_date, dateKey),
+    [userProfile?.sprint_start_date, dateKey]
+  );
+
+  const projection = useMemo(
+    () =>
+      projectFatLoss(
+        weightHistory ?? [],
+        userProfile?.sprint_start_date,
+        dateKey,
+        userProfile?.goal_weight_kg ?? null
+      ),
+    [weightHistory, userProfile?.sprint_start_date, userProfile?.goal_weight_kg, dateKey]
+  );
+
+  const proteinConsumed = useMemo(
+    () => totalProtein(dailyLog?.meals ?? []),
+    [dailyLog]
+  );
+  const proteinFloor =
+    userProfile?.protein_floor_g ??
+    defaultProteinFloor(userProfile?.goal_weight_kg ?? null, userProfile?.weight_kg ?? 90);
+
+  const adherence = useMemo(() => {
+    if (!userProfile) return null;
+    const logs = [...(logsHistory ?? []), ...(dailyLog ? [dailyLog] : [])];
+    const summaries = [...(summariesHistory ?? []), ...(nutritionSummary ? [nutritionSummary] : [])];
+    return summariseAdherence(
+      dateKey,
+      userProfile.sprint_start_date,
+      logs,
+      summaries,
+      mindLogs ?? [],
+      userProfile
+    );
+  }, [userProfile, logsHistory, dailyLog, summariesHistory, nutritionSummary, mindLogs, dateKey]);
 
   const totalCalories = useMemo(() => {
     if (!dailyLog) return 0;
@@ -363,8 +423,16 @@ export default function DashboardPage() {
         {dayName}, {fullDate}
       </p>
 
-      {/* ---------- Daily Score ---------- */}
-      <DailyScore log={dailyLog} date={today} calorieBudget={calorieBudget} />
+      {/* ---------- Sprint Header ---------- */}
+      <SprintHeader
+        progress={sprint}
+        phaseLabel={phase.label}
+        isDeload={phase.isDeload}
+        projection={projection}
+      />
+
+      {/* ---------- Line Held (body + mind + streak) ---------- */}
+      {adherence && <LineHeldCard lineHeld={adherence.today} streak={adherence.streak} />}
 
       {/* ---------- Insight Card ---------- */}
       <InsightCard
@@ -437,6 +505,11 @@ export default function DashboardPage() {
           goal={calorieBudget ?? dailyLog.calories_goal}
           fruitEaten={dailyLog.fruit_eaten}
         />
+
+        {/* Protein floor */}
+        <div className="mt-4">
+          <ProteinBar consumed={proteinConsumed} floor={proteinFloor} />
+        </div>
 
         {/* Fruit checkbox */}
         <button

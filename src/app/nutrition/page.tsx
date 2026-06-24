@@ -10,6 +10,7 @@ import {
   calculateNetDeficit,
   isOnTrack,
 } from "@/lib/calculations";
+import { projectFatLoss, defaultProteinFloor, totalProtein } from "@/lib/sprint";
 import type { DailyLog, DailyNutritionSummary, UserProfile, InsertMeal, PhotoAnalysis } from "@/lib/types";
 import {
   TrendingDown,
@@ -30,6 +31,8 @@ import { FoodCamera } from "@/components/dashboard/food-camera";
 import { FoodReviewSheet } from "@/components/dashboard/food-review-sheet";
 import { FoodSearch } from "@/components/dashboard/food-search";
 import { MealForm } from "@/components/dashboard/meal-form";
+import { ProjectionCard } from "@/components/sprint/projection-card";
+import { ProteinBar } from "@/components/sprint/protein-bar";
 
 // ============================================================
 // Nutrition — Calorie deficit tracking
@@ -71,6 +74,11 @@ export default function NutritionPage() {
   const { data: logsHistory } = useQuery({
     queryKey: ["daily-logs-history", 7],
     queryFn: () => queries.getDailyLogsHistory(7),
+  });
+
+  const { data: weightHistory } = useQuery({
+    queryKey: ["weight-history", 90],
+    queryFn: () => queries.getWeightHistory(90),
   });
 
   // ---------- Derived calculations ----------
@@ -121,6 +129,18 @@ export default function NutritionPage() {
       return { date, deficit, hasData: true };
     });
   }, [nutritionHistory, logsHistory, userProfile, today]);
+
+  // ---------- Day-90 projection ----------
+  const projection = useMemo(
+    () =>
+      projectFatLoss(
+        weightHistory ?? [],
+        userProfile?.sprint_start_date,
+        dateKey,
+        userProfile?.goal_weight_kg ?? null
+      ),
+    [weightHistory, userProfile?.sprint_start_date, userProfile?.goal_weight_kg, dateKey]
+  );
 
   // ---------- Mutations ----------
   const deleteMealMutation = useMutation<DailyLog, Error, string, { previous?: DailyLog }>({
@@ -249,6 +269,11 @@ export default function NutritionPage() {
     );
   }
 
+  const proteinConsumed = totalProtein(dailyLog.meals);
+  const proteinFloor =
+    userProfile?.protein_floor_g ??
+    defaultProteinFloor(userProfile?.goal_weight_kg ?? null, userProfile?.weight_kg ?? 90);
+
   return (
     <div className="max-w-2xl mx-auto p-4 pb-12 space-y-4">
       {/* ---------- Calorie Deficit Card ---------- */}
@@ -359,9 +384,17 @@ export default function NutritionPage() {
                 </span>
               </span>
             </div>
+
+            {/* Protein floor */}
+            <div className="pt-3 border-t border-[hsl(var(--border))]">
+              <ProteinBar consumed={proteinConsumed} floor={proteinFloor} />
+            </div>
           </div>
         )}
       </section>
+
+      {/* ---------- Day-90 Projection ---------- */}
+      <ProjectionCard projection={projection} />
 
       {/* ---------- Weekly Trend ---------- */}
       <section className="glass-card p-5">

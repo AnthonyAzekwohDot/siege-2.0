@@ -135,6 +135,19 @@ export interface MindLogEntry {
   stretchLevel?: StretchLevel;
   /** If master study, who/what was studied */
   masterReference?: string;
+  /** Photo of the session's artefact (Supabase Storage public URL). */
+  artefactUrl?: string;
+}
+
+/** A Day-0 / 45 / 90 benchmark capture (one row per checkpoint + prompt). */
+export interface ArtBenchmark {
+  id: string;
+  checkpoint: number; // 0 | 45 | 90
+  prompt_id: string;
+  artefact_url: string;
+  note?: string | null;
+  taken_on: string; // yyyy-MM-dd
+  created_at?: string;
 }
 
 export interface MindDailyLog {
@@ -196,6 +209,10 @@ export interface UserProfile {
   walk_presets: WalkPreset[];
   /** Day-0 of the 90-day sprint (yyyy-MM-dd). Anchors training phase/week. */
   sprint_start_date?: string | null;
+  /** Target finish-line weight for the sprint (kg). Drives the projection. */
+  goal_weight_kg?: number | null;
+  /** Daily protein floor (g). Null = use the suggested default. */
+  protein_floor_g?: number | null;
   updated_at: string;
 }
 
@@ -326,6 +343,8 @@ export const updateUserProfileSchema = z.object({
   safe_meals: z.array(z.object({ id: z.string(), name: z.string(), calories: z.number() })).optional(),
   walk_presets: z.array(z.object({ id: z.string(), name: z.string(), calories: z.number() })).optional(),
   sprint_start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  goal_weight_kg: z.number().min(30).max(300).nullable().optional(),
+  protein_floor_g: z.number().min(0).max(500).nullable().optional(),
 });
 
 export type InsertMeal = z.infer<typeof insertMealSchema>;

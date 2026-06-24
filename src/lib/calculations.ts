@@ -67,3 +67,37 @@ export function getMealTypeFromTime(): "breakfast" | "lunch" | "dinner" | "snack
   if (hour >= 15 && hour < 18) return "snack";
   return "dinner";
 }
+
+// ============ WEIGHT TREND (drives adaptive TDEE + the Day-90 projection) ============
+
+/**
+ * Exponential moving average of body weight, oldest -> newest. Smooths the
+ * daily water-weight noise so TDEE and the fat-loss projection track the real
+ * trend instead of a single spike. Returns null when there are no readings.
+ */
+export function calculateWeightEMA(weightsOldestFirst: number[], alpha = 0.25): number | null {
+  const clean = weightsOldestFirst.filter((w) => typeof w === "number" && !Number.isNaN(w));
+  if (clean.length === 0) return null;
+  let ema = clean[0];
+  for (let i = 1; i < clean.length; i++) {
+    ema = alpha * clean[i] + (1 - alpha) * ema;
+  }
+  return ema;
+}
+
+/**
+ * Least-squares slope of value-vs-day (units per day; negative = falling).
+ * Needs at least two points spread across at least two distinct days, else null.
+ */
+export function linearRatePerDay(points: { day: number; value: number }[]): number | null {
+  const pts = points.filter((p) => Number.isFinite(p.day) && Number.isFinite(p.value));
+  if (pts.length < 2) return null;
+  const n = pts.length;
+  const sumX = pts.reduce((s, p) => s + p.day, 0);
+  const sumY = pts.reduce((s, p) => s + p.value, 0);
+  const sumXY = pts.reduce((s, p) => s + p.day * p.value, 0);
+  const sumXX = pts.reduce((s, p) => s + p.day * p.day, 0);
+  const denom = n * sumXX - sumX * sumX;
+  if (denom === 0) return null; // all readings on the same day
+  return (n * sumXY - sumX * sumY) / denom;
+}

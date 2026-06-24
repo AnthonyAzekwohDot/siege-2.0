@@ -2,10 +2,16 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, subDays } from "date-fns";
 
 import * as queries from "@/lib/queries";
 import type { DailyLog } from "@/lib/types";
+import { WORKOUT_SCHEDULE, getTrainingPhase } from "@/lib/constants";
+import { getSprintProgress, projectFatLoss } from "@/lib/sprint";
+import { computeWeeklyVerdict } from "@/lib/adherence";
+import { recentPRs, byExerciseFromLogs } from "@/lib/overload";
+import { SprintHeader } from "@/components/sprint/sprint-header";
+import { WeeklyVerdictCard } from "@/components/sprint/weekly-verdict-card";
 import {
   Footprints,
   Flame,
@@ -21,6 +27,7 @@ import {
   Plus,
   Check,
   X,
+  Trophy,
 } from "lucide-react";
 
 // ============================================================
@@ -467,6 +474,59 @@ export default function ProgressPage() {
     queryFn: () => queries.getAllLogs(),
   });
 
+  // ---------- Sprint + verdict data ----------
+  const todayKey = format(today, "yyyy-MM-dd");
+  const { data: userProfile } = useQuery({
+    queryKey: ["user-profile"],
+    queryFn: queries.getUserProfile,
+  });
+  const { data: summaries } = useQuery({
+    queryKey: ["nutrition-history", 95],
+    queryFn: () => queries.getNutritionSummaries(95),
+  });
+  const { data: mindLogs } = useQuery({
+    queryKey: ["mind-logs-history", 95],
+    queryFn: () => queries.getMindLogsHistory(95),
+  });
+  const { data: weightHistory } = useQuery({
+    queryKey: ["weight-history", 90],
+    queryFn: () => queries.getWeightHistory(90),
+  });
+
+  const sprint = useMemo(
+    () => getSprintProgress(userProfile?.sprint_start_date, todayKey),
+    [userProfile?.sprint_start_date, todayKey]
+  );
+  const phase = useMemo(
+    () => getTrainingPhase(userProfile?.sprint_start_date, todayKey),
+    [userProfile?.sprint_start_date, todayKey]
+  );
+  const projection = useMemo(
+    () =>
+      projectFatLoss(
+        weightHistory ?? [],
+        userProfile?.sprint_start_date,
+        todayKey,
+        userProfile?.goal_weight_kg ?? null
+      ),
+    [weightHistory, userProfile?.sprint_start_date, userProfile?.goal_weight_kg, todayKey]
+  );
+  const weeklyVerdict = useMemo(() => {
+    if (!userProfile || !allLogs) return null;
+    const dates = Array.from({ length: 7 }, (_, i) =>
+      format(subDays(today, 6 - i), "yyyy-MM-dd")
+    );
+    return computeWeeklyVerdict(dates, allLogs, summaries ?? [], mindLogs ?? [], userProfile);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userProfile, allLogs, summaries, mindLogs, todayKey]);
+
+  const strengthPRs = useMemo(() => {
+    if (!allLogs) return [];
+    const bw = new Set<string>();
+    for (const day of WORKOUT_SCHEDULE) for (const ex of day.exercises) if (ex.isBodyweight) bw.add(ex.name);
+    return recentPRs(byExerciseFromLogs(allLogs), bw, 6);
+  }, [allLogs]);
+
   // ---------- Month stats ----------
   const monthStats = useMemo(() => {
     if (!allLogs) return null;
@@ -571,8 +631,50 @@ export default function ProgressPage() {
         </p>
       </div>
 
+      {/* ---------- Sprint Finish Line ---------- */}
+      {userProfile && (
+        <SprintHeader
+          progress={sprint}
+          phaseLabel={phase.label}
+          isDeload={phase.isDeload}
+          projection={projection}
+        />
+      )}
+
+      {/* ---------- Weekly Verdict ---------- */}
+      {weeklyVerdict && <WeeklyVerdictCard verdict={weeklyVerdict} />}
+
       {/* ---------- Weight Tracking ---------- */}
       <WeightCard />
+
+      {/* ---------- Strength PRs ---------- */}
+      {strengthPRs.length > 0 && (
+        <section className="glass-card p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-[hsl(var(--chart-4))]" />
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+              Strength — Recent PRs
+            </h3>
+          </div>
+          <div className="space-y-2">
+            {strengthPRs.map((pr) => (
+              <div
+                key={pr.exercise}
+                className="flex items-center justify-between border-b border-[hsl(var(--border))] py-2 last:border-0"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-[hsl(var(--foreground))]">{pr.exercise}</p>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))]">{pr.date.slice(5)}</p>
+                </div>
+                <span className="shrink-0 text-sm font-bold text-[hsl(var(--chart-3))]">{pr.value}</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-[11px] text-[hsl(var(--muted-foreground))]">
+            Tap any exercise on Home or Workout for its full history + next target.
+          </p>
+        </section>
+      )}
 
       {/* ---------- Month Selector ---------- */}
       <div className="glass-card p-4 flex items-center justify-between">

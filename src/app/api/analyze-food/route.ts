@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { FOOD_DATABASE, findFood, calculateNutrition } from "@/lib/food-database";
 import { sameOriginGuard, rejectByContentLength, MAX_IMAGE_BYTES } from "@/lib/api-guard";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import type { DetectedFoodItem, PhotoAnalysis } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
@@ -47,6 +48,11 @@ export async function POST(request: NextRequest) {
       { status: 413 }
     );
   }
+
+  // Rate-limit only requests that will actually reach OpenAI, so the usage log
+  // (and the daily money cap) reflects real spend, not rejected/invalid posts.
+  const limited = await enforceRateLimit(request, "analyze-food");
+  if (limited) return limited;
 
   const openai = new OpenAI({ apiKey });
 

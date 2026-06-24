@@ -7,7 +7,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import {
   Footprints,
-  ChevronDown,
+  Info,
+  ArrowUp,
   Minus,
   Plus,
   Trophy,
@@ -18,6 +19,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { DaySchedule, Exercise, SetEntry, PhaseInfo, DailyLog } from "@/lib/types";
 import { useLogSet, useExerciseHistory } from "@/hooks/use-queries";
 import type { ExerciseSession } from "@/lib/queries";
+import { getProgressionTarget } from "@/lib/overload";
+import { ExerciseSheet } from "@/components/dashboard/exercise-sheet";
 
 const REST_SECONDS = 90;
 
@@ -51,18 +54,6 @@ function bestFrom(sessions: ExerciseSession[], excludeDate: string) {
     }
   }
   return { bestE1RM, bestReps };
-}
-
-function lastSessionLabel(sessions: ExerciseSession[], excludeDate: string): string | null {
-  const prev = sessions.find((s) => s.date !== excludeDate);
-  if (!prev) return null;
-  const top = prev.sets
-    .filter((s) => s && (s.reps != null || s.load != null))
-    .sort((a, b) => est1RM(b.load, b.reps) - est1RM(a.load, a.reps))[0];
-  if (!top) return null;
-  const when = prev.date.slice(5); // MM-DD
-  if (top.load == null) return `Last: ${top.reps ?? 0} reps (${when})`;
-  return `Last: ${top.load}kg x ${top.reps ?? 0} (${when})`;
 }
 
 export function WorkoutCard({
@@ -166,13 +157,13 @@ function ExerciseLogger({
   phase: PhaseInfo;
   onSetDone: () => void;
 }) {
-  const [open, setOpen] = React.useState(false);
+  const [sheetOpen, setSheetOpen] = React.useState(false);
   const queryClient = useQueryClient();
   const logSet = useLogSet(date);
   const { data: history = [] } = useExerciseHistory(exercise.name);
 
   const targetSets = Math.max(1, Math.round(exercise.sets * phase.setMultiplier));
-  const last = lastSessionLabel(history, date);
+  const target = getProgressionTarget(exercise, history, date, targetSets, phase.isDeload);
   const { bestE1RM, bestReps } = bestFrom(history, date);
 
   const prevSession = history.find((s) => s.date !== date);
@@ -216,45 +207,36 @@ function ExerciseLogger({
 
   return (
     <div className="rounded-lg border border-[hsl(var(--border))] p-2.5">
-      <div className="flex items-start justify-between gap-2">
-        <button onClick={() => setOpen((o) => !o)} className="flex-1 min-w-0 text-left">
+      <button
+        onClick={() => setSheetOpen(true)}
+        className="flex w-full items-start justify-between gap-2 text-left"
+        aria-label={`${exercise.name} guide and progress`}
+      >
+        <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <p className="text-sm font-semibold truncate">{exercise.name}</p>
-            <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 text-[hsl(var(--muted-foreground))] transition-transform", open && "rotate-180")} />
+            <p className="truncate text-sm font-semibold">{exercise.name}</p>
+            <Info className="h-3.5 w-3.5 shrink-0 text-[hsl(var(--muted-foreground))]" />
           </div>
           <p className="text-xs text-[hsl(var(--muted-foreground))]">
             {targetSets} x {exercise.reps}
             {phase.isDeload && targetSets !== exercise.sets && " (deload)"}
           </p>
-          {last && <p className="text-[11px] text-[hsl(var(--primary))] mt-0.5">{last}</p>}
-        </button>
-      </div>
-
-      {open && (
-        <div className="mt-2 space-y-1.5 rounded-md bg-[hsl(var(--muted))] p-2.5 text-xs text-[hsl(var(--muted-foreground))]">
-          {exercise.instructions && <p>{exercise.instructions}</p>}
-          {exercise.homeAlt && (
-            <p>
-              <span className="font-semibold text-[hsl(var(--foreground))]">Home (15kg): </span>
-              {exercise.homeAlt}
-            </p>
-          )}
-          {exercise.muscleGroups && exercise.muscleGroups.length > 0 && (
-            <div className="flex flex-wrap gap-1 pt-0.5">
-              {exercise.muscleGroups.map((m) => (
-                <span key={m} className="rounded bg-[hsl(var(--background))] px-1.5 py-0.5 text-[10px]">
-                  {m}
-                </span>
-              ))}
-            </div>
-          )}
-          {exercise.diagram && (
-            <pre className="overflow-x-auto whitespace-pre font-mono text-[10px] leading-tight text-[hsl(var(--foreground))]">
-              {exercise.diagram}
-            </pre>
+          {target.lastSummary && (
+            <p className="mt-0.5 text-[11px] text-[hsl(var(--muted-foreground))]">Last {target.lastSummary}</p>
           )}
         </div>
-      )}
+        {target.readyToLevelUp ? (
+          <span className="flex shrink-0 items-center gap-1 rounded-full bg-[hsl(var(--chart-3))/0.15] px-2 py-0.5 text-[10px] font-bold text-[hsl(var(--chart-3))]">
+            <ArrowUp className="h-3 w-3" /> Level up
+          </span>
+        ) : (
+          target.workingLoad != null && (
+            <span className="shrink-0 text-[11px] font-semibold text-[hsl(var(--primary))]">
+              aim {target.workingLoad}kg
+            </span>
+          )
+        )}
+      </button>
 
       <div className="mt-2 space-y-1">
         {Array.from({ length: targetSets }, (_, i) => {
@@ -282,6 +264,16 @@ function ExerciseLogger({
         <p className="mt-1.5 text-[11px] text-[hsl(var(--destructive))]">
           Could not save that set. If you just deployed, run the workout DB migration.
         </p>
+      )}
+
+      {sheetOpen && (
+        <ExerciseSheet
+          exercise={exercise}
+          date={date}
+          targetSets={targetSets}
+          isDeload={phase.isDeload}
+          onClose={() => setSheetOpen(false)}
+        />
       )}
     </div>
   );
