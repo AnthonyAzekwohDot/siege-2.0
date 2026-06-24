@@ -6,9 +6,10 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, subDays } 
 
 import * as queries from "@/lib/queries";
 import type { DailyLog } from "@/lib/types";
-import { getTrainingPhase } from "@/lib/constants";
+import { WORKOUT_SCHEDULE, getTrainingPhase } from "@/lib/constants";
 import { getSprintProgress, projectFatLoss } from "@/lib/sprint";
 import { computeWeeklyVerdict } from "@/lib/adherence";
+import { recentPRs, byExerciseFromLogs } from "@/lib/overload";
 import { SprintHeader } from "@/components/sprint/sprint-header";
 import { WeeklyVerdictCard } from "@/components/sprint/weekly-verdict-card";
 import {
@@ -26,6 +27,7 @@ import {
   Plus,
   Check,
   X,
+  Trophy,
 } from "lucide-react";
 
 // ============================================================
@@ -518,6 +520,13 @@ export default function ProgressPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userProfile, allLogs, summaries, mindLogs, todayKey]);
 
+  const strengthPRs = useMemo(() => {
+    if (!allLogs) return [];
+    const bw = new Set<string>();
+    for (const day of WORKOUT_SCHEDULE) for (const ex of day.exercises) if (ex.isBodyweight) bw.add(ex.name);
+    return recentPRs(byExerciseFromLogs(allLogs), bw, 6);
+  }, [allLogs]);
+
   // ---------- Month stats ----------
   const monthStats = useMemo(() => {
     if (!allLogs) return null;
@@ -637,6 +646,35 @@ export default function ProgressPage() {
 
       {/* ---------- Weight Tracking ---------- */}
       <WeightCard />
+
+      {/* ---------- Strength PRs ---------- */}
+      {strengthPRs.length > 0 && (
+        <section className="glass-card p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-[hsl(var(--chart-4))]" />
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+              Strength — Recent PRs
+            </h3>
+          </div>
+          <div className="space-y-2">
+            {strengthPRs.map((pr) => (
+              <div
+                key={pr.exercise}
+                className="flex items-center justify-between border-b border-[hsl(var(--border))] py-2 last:border-0"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-[hsl(var(--foreground))]">{pr.exercise}</p>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))]">{pr.date.slice(5)}</p>
+                </div>
+                <span className="shrink-0 text-sm font-bold text-[hsl(var(--chart-3))]">{pr.value}</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-[11px] text-[hsl(var(--muted-foreground))]">
+            Tap any exercise on Home or Workout for its full history + next target.
+          </p>
+        </section>
+      )}
 
       {/* ---------- Month Selector ---------- */}
       <div className="glass-card p-4 flex items-center justify-between">

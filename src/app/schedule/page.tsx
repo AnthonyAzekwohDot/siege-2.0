@@ -7,14 +7,15 @@ import { format, addDays, startOfWeek } from "date-fns";
 import * as queries from "@/lib/queries";
 import { WORKOUT_SCHEDULE } from "@/lib/constants";
 import type { DailyLog, DayOfWeek, DaySchedule, Exercise } from "@/lib/types";
+import { useExerciseHistory } from "@/hooks/use-queries";
+import { ExerciseSheet } from "@/components/dashboard/exercise-sheet";
 import {
   Dumbbell,
   Coffee,
   Footprints,
   Clock,
   Target,
-  ChevronDown,
-  ChevronUp,
+  Info,
 } from "lucide-react";
 
 // ============================================================
@@ -51,63 +52,49 @@ function getDateForDay(day: DayOfWeek): string {
 
 // ---------- Exercise Card (inline, collapsible) ----------
 
-// Read-only planner card. Logging happens on the Home tab (one source of truth
-// for completion: daily_logs.exercise_logs).
-function ExerciseCard({ exercise }: { exercise: Exercise }) {
-  const [expanded, setExpanded] = useState(false);
+// Read-only planner card — tap to open the full exercise guide (how-to + form
+// key + video demo, the progressive-overload target, and your strength trend).
+// Logging stays on the Home tab (one source of truth: daily_logs.exercise_logs).
+function ExerciseCard({ exercise, date }: { exercise: Exercise; date: string }) {
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const { data: history = [] } = useExerciseHistory(exercise.name);
 
   return (
-    <div className="glass-card p-4">
-      <div className="flex items-center gap-3">
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-[hsl(var(--foreground))]">
-            {exercise.name}
-          </p>
+    <>
+      <button
+        onClick={() => setSheetOpen(true)}
+        className="glass-card flex w-full items-center gap-3 p-4 text-left transition-transform active:scale-[0.99]"
+        aria-label={`${exercise.name} guide`}
+      >
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-[hsl(var(--foreground))]">{exercise.name}</p>
           <p className="text-xs text-[hsl(var(--muted-foreground))]">
             {exercise.sets} x {exercise.reps}
           </p>
         </div>
-
-        <div className="flex gap-1 flex-wrap justify-end">
+        <div className="flex flex-wrap justify-end gap-1">
           {exercise.muscleGroups?.slice(0, 2).map((mg) => (
             <span
               key={mg}
-              className="text-[10px] px-2 py-0.5 rounded-full bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] font-medium"
+              className="rounded-full bg-[hsl(var(--accent))] px-2 py-0.5 text-[10px] font-medium text-[hsl(var(--accent-foreground))]"
             >
               {mg}
             </span>
           ))}
         </div>
+        <Info className="h-4 w-4 shrink-0 text-[hsl(var(--muted-foreground))]" />
+      </button>
 
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
-        >
-          {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
-      </div>
-
-      {expanded && (
-        <div className="mt-4 space-y-3 border-t border-[hsl(var(--border))] pt-3">
-          {exercise.instructions && (
-            <p className="text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">
-              {exercise.instructions}
-            </p>
-          )}
-          {exercise.homeAlt && (
-            <p className="text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">
-              <span className="font-semibold text-[hsl(var(--foreground))]">Home (15kg): </span>
-              {exercise.homeAlt}
-            </p>
-          )}
-          {exercise.diagram && (
-            <pre className="text-xs font-mono text-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted))] p-3 rounded-lg overflow-x-auto whitespace-pre">
-              {exercise.diagram.trim()}
-            </pre>
-          )}
-        </div>
+      {sheetOpen && (
+        <ExerciseSheet
+          exercise={exercise}
+          date={date}
+          history={history}
+          targetSets={exercise.sets}
+          onClose={() => setSheetOpen(false)}
+        />
       )}
-    </div>
+    </>
   );
 }
 
@@ -286,7 +273,7 @@ export default function SchedulePage() {
             Exercises
           </h3>
           {schedule.exercises.map((exercise) => (
-            <ExerciseCard key={exercise.name} exercise={exercise} />
+            <ExerciseCard key={exercise.name} exercise={exercise} date={dateKey} />
           ))}
         </div>
       )}
