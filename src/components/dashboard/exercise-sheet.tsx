@@ -2,7 +2,7 @@
 
 import { X, TrendingUp, PlayCircle, ArrowUpCircle } from "lucide-react";
 import type { Exercise } from "@/lib/types";
-import type { ExerciseSession } from "@/lib/queries";
+import { useExerciseHistory } from "@/hooks/use-queries";
 import { getProgressionTarget, exerciseSeries } from "@/lib/overload";
 import { exerciseFormKey, exerciseVideoUrl } from "@/lib/exercise-guide";
 import { LiftChart } from "@/components/dashboard/lift-chart";
@@ -10,22 +10,24 @@ import { LiftChart } from "@/components/dashboard/lift-chart";
 interface ExerciseSheetProps {
   exercise: Exercise;
   date: string;
-  history: ExerciseSession[];
   targetSets: number;
+  isDeload?: boolean;
   onClose: () => void;
 }
 
 /** The exercise detail sheet: how-to + form key + a real video demo, the
- *  progressive-overload target, and the strength trend — all in one place. */
-export function ExerciseSheet({ exercise, date, history, targetSets, onClose }: ExerciseSheetProps) {
-  const target = getProgressionTarget(exercise, history, date, targetSets);
+ *  progressive-overload target, and the strength trend — all in one place.
+ *  Fetches its own history, so the planner only queries when it's opened. */
+export function ExerciseSheet({ exercise, date, targetSets, isDeload = false, onClose }: ExerciseSheetProps) {
+  const { data: history = [] } = useExerciseHistory(exercise.name);
+  const target = getProgressionTarget(exercise, history, date, targetSets, isDeload);
   const series = exerciseSeries(history);
   const formKey = exerciseFormKey(exercise.name);
   const videoUrl = exerciseVideoUrl(exercise.name);
-  const bw = !!exercise.isBodyweight;
 
   const bestE1RM = series.reduce((m, p) => Math.max(m, p.topE1RM), 0);
   const bestReps = series.reduce((m, p) => Math.max(m, p.topReps), 0);
+  const bestLabel = bestE1RM > 0 ? `${bestE1RM.toFixed(1)}kg e1RM` : bestReps > 0 ? `${bestReps} reps` : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onClose}>
@@ -39,7 +41,7 @@ export function ExerciseSheet({ exercise, date, history, targetSets, onClose }: 
           <button
             onClick={onClose}
             aria-label="Close"
-            className="flex h-9 w-9 items-center justify-center text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+            className="-mr-2 flex h-11 w-11 items-center justify-center text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
           >
             <X className="h-5 w-5" />
           </button>
@@ -73,6 +75,7 @@ export function ExerciseSheet({ exercise, date, history, targetSets, onClose }: 
             <p className="mt-1.5 text-xs text-[hsl(var(--muted-foreground))]">
               {target.targetSets} sets
               {exercise.repRange ? ` × ${exercise.repRange[0]}–${exercise.repRange[1]} reps` : ` × ${exercise.reps}`}
+              {isDeload && " (deload)"}
               {target.lastSummary && ` · last ${target.lastSummary}`}
             </p>
           </section>
@@ -113,13 +116,9 @@ export function ExerciseSheet({ exercise, date, history, targetSets, onClose }: 
               <h4 className="text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
                 Your progress
               </h4>
-              {(bestE1RM > 0 || bestReps > 0) && (
-                <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                  Best {bw ? `${bestReps} reps` : `${bestE1RM.toFixed(1)}kg e1RM`}
-                </span>
-              )}
+              {bestLabel && <span className="text-xs text-[hsl(var(--muted-foreground))]">Best {bestLabel}</span>}
             </div>
-            <LiftChart points={series} bodyweight={bw} />
+            <LiftChart points={series} />
           </section>
         </div>
       </div>

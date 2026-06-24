@@ -163,7 +163,7 @@ function ExerciseLogger({
   const { data: history = [] } = useExerciseHistory(exercise.name);
 
   const targetSets = Math.max(1, Math.round(exercise.sets * phase.setMultiplier));
-  const target = getProgressionTarget(exercise, history, date, targetSets);
+  const target = getProgressionTarget(exercise, history, date, targetSets, phase.isDeload);
   const { bestE1RM, bestReps } = bestFrom(history, date);
 
   const prevSession = history.find((s) => s.date !== date);
@@ -270,8 +270,8 @@ function ExerciseLogger({
         <ExerciseSheet
           exercise={exercise}
           date={date}
-          history={history}
           targetSets={targetSets}
+          isDeload={phase.isDeload}
           onClose={() => setSheetOpen(false)}
         />
       )}

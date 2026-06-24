@@ -7,7 +7,6 @@ import { format, addDays, startOfWeek } from "date-fns";
 import * as queries from "@/lib/queries";
 import { WORKOUT_SCHEDULE } from "@/lib/constants";
 import type { DailyLog, DayOfWeek, DaySchedule, Exercise } from "@/lib/types";
-import { useExerciseHistory } from "@/hooks/use-queries";
 import { ExerciseSheet } from "@/components/dashboard/exercise-sheet";
 import {
   Dumbbell,
@@ -57,7 +56,6 @@ function getDateForDay(day: DayOfWeek): string {
 // Logging stays on the Home tab (one source of truth: daily_logs.exercise_logs).
 function ExerciseCard({ exercise, date }: { exercise: Exercise; date: string }) {
   const [sheetOpen, setSheetOpen] = useState(false);
-  const { data: history = [] } = useExerciseHistory(exercise.name);
 
   return (
     <>
@@ -89,7 +87,6 @@ function ExerciseCard({ exercise, date }: { exercise: Exercise; date: string }) 
         <ExerciseSheet
           exercise={exercise}
           date={date}
-          history={history}
           targetSets={exercise.sets}
           onClose={() => setSheetOpen(false)}
         />

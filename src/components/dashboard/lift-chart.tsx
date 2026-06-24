@@ -2,11 +2,14 @@
 
 import type { LiftPoint } from "@/lib/overload";
 
-/** Compact trend for a single lift — est-1RM for loaded lifts, top reps for
- *  bodyweight. */
-export function LiftChart({ points, bodyweight = false }: { points: LiftPoint[]; bodyweight?: boolean }) {
-  const valOf = (p: LiftPoint) => (bodyweight ? p.topReps : p.topE1RM);
-  const unit = bodyweight ? "reps" : "kg e1RM";
+/** Compact trend for a single lift. Picks the metric from the data itself —
+ *  est-1RM when there are loaded sets, top reps otherwise (so dual loaded/
+ *  bodyweight movements chart whatever was actually logged). */
+export function LiftChart({ points }: { points: LiftPoint[] }) {
+  const loaded = points.some((p) => p.topE1RM > 0);
+  const valOf = (p: LiftPoint) => (loaded ? p.topE1RM : p.topReps);
+  const unit = loaded ? "kg e1RM" : "reps";
+  const dp = loaded ? 1 : 0;
   const pts = points.filter((p) => valOf(p) > 0);
 
   if (pts.length < 2) {
@@ -20,18 +23,20 @@ export function LiftChart({ points, bodyweight = false }: { points: LiftPoint[];
   const vals = pts.map(valOf);
   const min = Math.min(...vals);
   const max = Math.max(...vals);
-  const range = max - min || 1;
+  const span = max - min || 1;
+  const first = vals[0];
+  const latest = vals[vals.length - 1];
+  const up = latest >= first;
+  const stroke = up ? "hsl(var(--chart-3))" : "hsl(var(--destructive))";
+
   const W = 100, H = 56, pad = 6;
   const innerW = W - pad * 2;
   const innerH = H - pad * 2;
-
   const coords = pts.map((p, i) => ({
     x: pad + (i / (pts.length - 1)) * innerW,
-    y: pad + innerH - ((valOf(p) - min) / range) * innerH,
+    y: pad + innerH - ((valOf(p) - min) / span) * innerH,
   }));
   const line = coords.map((c) => `${c.x},${c.y}`).join(" ");
-  const up = vals[vals.length - 1] >= vals[0];
-  const stroke = up ? "hsl(var(--chart-3))" : "hsl(var(--destructive))";
 
   return (
     <div>
@@ -61,11 +66,9 @@ export function LiftChart({ points, bodyweight = false }: { points: LiftPoint[];
         ))}
       </svg>
       <div className="mt-1 flex justify-between text-[10px] text-[hsl(var(--muted-foreground))]">
-        <span>
-          {min.toFixed(bodyweight ? 0 : 1)} {unit}
-        </span>
+        <span>{first.toFixed(dp)} {unit}</span>
         <span className={up ? "text-[hsl(var(--chart-3))]" : "text-[hsl(var(--destructive))]"}>
-          {up ? "↑" : "↓"} {max.toFixed(bodyweight ? 0 : 1)} {unit}
+          {up ? "↑" : "↓"} {latest.toFixed(dp)} {unit}
         </span>
       </div>
     </div>

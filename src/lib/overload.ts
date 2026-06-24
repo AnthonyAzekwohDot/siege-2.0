@@ -30,62 +30,93 @@ export interface ProgressionTarget {
   lastSummary: string | null;
 }
 
+/** The load that the most completed sets shared (mode; ties go to the heavier). */
+function modeLoad(sets: { load: number | null }[]): number {
+  const counts = new Map<number, number>();
+  for (const s of sets) {
+    const l = s.load ?? 0;
+    counts.set(l, (counts.get(l) ?? 0) + 1);
+  }
+  let best = 0;
+  let bestCount = -1;
+  for (const [l, c] of counts) {
+    if (c > bestCount || (c === bestCount && l > best)) { best = l; bestCount = c; }
+  }
+  return best;
+}
+
+/**
+ * @param displaySets the (deload-adjusted) set count to show in the label.
+ * @param isDeload when true, never advise adding load — it's a recovery week.
+ * Readiness is judged against the exercise's FULL prescribed set count using only
+ * COMPLETED sets at the actual working load, so partial/un-done/mixed-load
+ * sessions can't trigger a false "level up".
+ */
 export function getProgressionTarget(
   exercise: Exercise,
   history: ExerciseSession[],
   excludeDate: string,
-  targetSets: number
+  displaySets: number,
+  isDeload = false
 ): ProgressionTarget {
   const range = exercise.repRange ?? null;
+  const prescribed = exercise.sets;
   const prev = history.find((s) => s.date !== excludeDate);
-  const workingSets = (prev?.sets ?? []).filter(
-    (s): s is NonNullable<typeof s> => !!s && (s.reps != null || s.load != null)
-  );
 
-  // ---- Bodyweight / AMRAP: chase reps ----
+  // ---- Bodyweight / AMRAP: chase reps, best across ALL history ----
   if (exercise.isBodyweight) {
-    const bestReps = workingSets.reduce((m, s) => Math.max(m, s.reps ?? 0), 0);
+    let allBest = 0;
+    for (const s of history) {
+      if (s.date === excludeDate) continue;
+      for (const set of s.sets) if (set?.done) allBest = Math.max(allBest, set.reps ?? 0);
+    }
+    const lastDone = (prev?.sets ?? []).filter((s) => s?.done && (s.reps ?? 0) > 0);
     return {
-      targetSets, repRange: range, workingLoad: null, readyToLevelUp: false,
-      lastSummary: workingSets.length ? `${workingSets.length}×${bestReps} reps` : null,
-      suggestion: bestReps > 0 ? `Beat ${bestReps} reps — even by one.` : "Log your first set as a baseline.",
+      targetSets: displaySets, repRange: range, workingLoad: null, readyToLevelUp: false,
+      lastSummary: lastDone.length
+        ? `${lastDone.length}×${Math.max(...lastDone.map((s) => s.reps ?? 0))} reps`
+        : null,
+      suggestion: allBest > 0 ? `Beat ${allBest} reps — even by one.` : "Log your first set as a baseline.",
     };
   }
 
-  // ---- No prior loaded data ----
-  if (!prev || workingSets.length === 0) {
+  // ---- Loaded: only completed (done) sets with a real load count ----
+  const completed = (prev?.sets ?? []).filter((s) => s?.done && s.load != null && s.reps != null);
+  if (!prev || completed.length === 0) {
     return {
-      targetSets, repRange: range, workingLoad: null, readyToLevelUp: false, lastSummary: null,
+      targetSets: displaySets, repRange: range, workingLoad: null, readyToLevelUp: false, lastSummary: null,
       suggestion: range
         ? `Pick a weight you can do for ${range[0]}–${range[1]} clean reps, then log it.`
         : "Log your first set as a baseline.",
     };
   }
 
-  // ---- Double progression ----
-  const load = workingSets[0].load ?? 0;
-  const working = workingSets.slice(0, targetSets);
-  const repsArr = working.map((s) => s.reps ?? 0);
+  // Evaluate only the sets at the actual working load (the load most sets shared).
+  const workingLoad = modeLoad(completed);
+  const atLoad = completed.filter((s) => s.load === workingLoad);
+  const repsArr = atLoad.map((s) => s.reps ?? 0);
   const minReps = Math.min(...repsArr);
   const maxReps = Math.max(...repsArr);
-  const lastSummary = `${working.length}×${minReps === maxReps ? minReps : `${minReps}–${maxReps}`} @ ${load}kg`;
+  const lastSummary = `${atLoad.length}×${minReps === maxReps ? minReps : `${minReps}–${maxReps}`} @ ${workingLoad}kg`;
 
+  // Add load only off-deload, when the full prescribed number of working sets at
+  // this load all topped the range.
   const allHitTop =
-    range != null && working.length >= targetSets && working.every((s) => (s.reps ?? 0) >= range[1]);
+    !isDeload && range != null && atLoad.length >= prescribed && atLoad.every((s) => (s.reps ?? 0) >= range[1]);
 
   if (allHitTop && range) {
-    const inc = loadIncrement(load);
+    const inc = loadIncrement(workingLoad);
     return {
-      targetSets, repRange: range, workingLoad: load + inc, readyToLevelUp: true, lastSummary,
-      suggestion: `You topped ${range[1]} reps on every set. Add ${inc}kg → ${load + inc}kg, back down to ${range[0]} reps.`,
+      targetSets: displaySets, repRange: range, workingLoad: workingLoad + inc, readyToLevelUp: true, lastSummary,
+      suggestion: `You topped ${range[1]} reps on every set. Add ${inc}kg → ${workingLoad + inc}kg, back down to ${range[0]} reps.`,
     };
   }
 
   return {
-    targetSets, repRange: range, workingLoad: load, readyToLevelUp: false, lastSummary,
+    targetSets: displaySets, repRange: range, workingLoad, readyToLevelUp: false, lastSummary,
     suggestion: range
-      ? `Stay at ${load}kg — add reps toward ${range[1]} on every set.`
-      : `Beat last session at ${load}kg.`,
+      ? `Stay at ${workingLoad}kg — add reps toward ${range[1]} on every set.`
+      : `Beat last session at ${workingLoad}kg.`,
   };
 }
 
