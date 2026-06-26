@@ -1,11 +1,12 @@
 "use client";
 
-import { X, TrendingUp, PlayCircle, ArrowUpCircle } from "lucide-react";
+import { X, TrendingUp, ArrowUpCircle, Activity } from "lucide-react";
 import type { Exercise } from "@/lib/types";
 import { useExerciseHistory } from "@/hooks/use-queries";
 import { getProgressionTarget, exerciseSeries } from "@/lib/overload";
-import { exerciseFormKey, exerciseVideoUrl } from "@/lib/exercise-guide";
+import { exerciseFormKey, exerciseMovement } from "@/lib/exercise-guide";
 import { LiftChart } from "@/components/dashboard/lift-chart";
+import { MuscleMap, musclesToKeys } from "@/components/dashboard/muscle-map";
 
 interface ExerciseSheetProps {
   exercise: Exercise;
@@ -15,15 +16,16 @@ interface ExerciseSheetProps {
   onClose: () => void;
 }
 
-/** The exercise detail sheet: how-to + form key + a real video demo, the
- *  progressive-overload target, and the strength trend — all in one place.
- *  Fetches its own history, so the planner only queries when it's opened. */
+/** Exercise detail sheet: a muscle-map diagram + the movement, the
+ *  progressive-overload target, the how-to cues, and the strength trend.
+ *  Fetches its own history so the planner only queries when it's opened. */
 export function ExerciseSheet({ exercise, date, targetSets, isDeload = false, onClose }: ExerciseSheetProps) {
   const { data: history = [] } = useExerciseHistory(exercise.name);
   const target = getProgressionTarget(exercise, history, date, targetSets, isDeload);
   const series = exerciseSeries(history);
   const formKey = exerciseFormKey(exercise.name);
-  const videoUrl = exerciseVideoUrl(exercise.name);
+  const movement = exerciseMovement(exercise.name);
+  const worked = musclesToKeys(exercise.muscleGroups);
 
   const bestE1RM = series.reduce((m, p) => Math.max(m, p.topE1RM), 0);
   const bestReps = series.reduce((m, p) => Math.max(m, p.topReps), 0);
@@ -48,16 +50,29 @@ export function ExerciseSheet({ exercise, date, targetSets, isDeload = false, on
         </div>
 
         <div className="space-y-4 p-5">
-          {/* Muscle chips */}
-          {exercise.muscleGroups && exercise.muscleGroups.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {exercise.muscleGroups.map((m) => (
-                <span key={m} className="rounded-full bg-[hsl(var(--muted))] px-2.5 py-0.5 text-[11px] text-[hsl(var(--muted-foreground))]">
-                  {m}
-                </span>
-              ))}
-            </div>
-          )}
+          {/* Muscles worked + movement */}
+          <section>
+            <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+              Muscles worked
+            </h4>
+            <MuscleMap worked={worked} />
+            {movement && (
+              <div className="mt-2 flex items-center justify-center gap-1.5 text-xs">
+                <Activity className="h-3.5 w-3.5 text-[hsl(var(--primary))]" />
+                <span className="text-[hsl(var(--muted-foreground))]">Movement:</span>
+                <span className="font-medium text-[hsl(var(--foreground))]">{movement}</span>
+              </div>
+            )}
+            {exercise.muscleGroups && exercise.muscleGroups.length > 0 && (
+              <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+                {exercise.muscleGroups.map((m) => (
+                  <span key={m} className="rounded-full bg-[hsl(var(--muted))] px-2.5 py-0.5 text-[11px] text-[hsl(var(--muted-foreground))]">
+                    {m}
+                  </span>
+                ))}
+              </div>
+            )}
+          </section>
 
           {/* Progressive overload target */}
           <section className={`rounded-xl p-4 ${target.readyToLevelUp ? "bg-[hsl(var(--chart-3))/0.12]" : "bg-[hsl(var(--muted))]"}`}>
@@ -100,14 +115,6 @@ export function ExerciseSheet({ exercise, date, targetSets, isDeload = false, on
                 {exercise.homeAlt}
               </p>
             )}
-            <a
-              href={videoUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-3 inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-[hsl(var(--border))] px-3 text-sm font-semibold text-[hsl(var(--foreground))] active:opacity-70"
-            >
-              <PlayCircle className="h-4 w-4 text-[hsl(var(--primary))]" /> Watch demo
-            </a>
           </section>
 
           {/* Progress */}
