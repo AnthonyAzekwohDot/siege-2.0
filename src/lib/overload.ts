@@ -61,7 +61,10 @@ export function getProgressionTarget(
 ): ProgressionTarget {
   const range = exercise.repRange ?? null;
   const prescribed = exercise.sets;
-  const prev = history.find((s) => s.date !== excludeDate);
+  // The most recent session STRICTLY BEFORE the day being logged — so
+  // backfilling a past day never derives "last"/defaults from a later session.
+  // (history is newest-first; yyyy-MM-dd compares lexicographically.)
+  const prev = history.find((s) => s.date < excludeDate);
 
   // ---- Bodyweight / AMRAP: chase reps, best across ALL history ----
   if (exercise.isBodyweight) {

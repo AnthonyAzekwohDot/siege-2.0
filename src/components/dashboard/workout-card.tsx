@@ -174,6 +174,11 @@ function ExerciseLogger({
     if (existing) return { load: existing.load, reps: existing.reps };
     const prevSet = prevSession?.sets?.[index] ?? prevSession?.sets?.[prevSession.sets.length - 1];
     if (exercise.isBodyweight) return { load: null, reps: prevSet?.reps ?? 0 };
+    // When the plan says "level up", seed the new working load (and the bottom of
+    // the range) so the prefilled row matches the target instead of last week's load.
+    if (target.readyToLevelUp && target.workingLoad != null) {
+      return { load: target.workingLoad, reps: exercise.repRange?.[0] ?? lo };
+    }
     return { load: prevSet?.load ?? 15, reps: prevSet?.reps ?? lo };
   }
 

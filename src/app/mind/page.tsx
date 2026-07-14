@@ -199,7 +199,7 @@ function computeCoverage(
     count: counts[f],
     intensity: counts[f] / maxCount,
     daysSince: lastPracticed[f]
-      ? Math.floor((Date.now() - new Date(lastPracticed[f] + "T12:00:00").getTime()) / 86400000)
+      ? Math.max(0, Math.floor((Date.now() - new Date(lastPracticed[f] + "T12:00:00").getTime()) / 86400000))
       : 999,
   }));
 }
@@ -416,11 +416,13 @@ function StretchSelector({ value, onChange }: { value: StretchLevel; onChange: (
 function CompletionDialog({
   block,
   existingEntry,
+  timedMinutes,
   onSubmit,
   onClose,
 }: {
   block: MindBlock;
   existingEntry?: MindLogEntry;
+  timedMinutes?: number;
   onSubmit: (data: {
     status: BlockStatus;
     actualMinutes: number;
@@ -434,7 +436,11 @@ function CompletionDialog({
   onClose: () => void;
 }) {
   const [status, setStatus] = useState<BlockStatus>(existingEntry?.status ?? "done");
-  const [actualMinutes, setActualMinutes] = useState(existingEntry?.actualMinutes ?? block.plannedMinutes);
+  // Prefer the actual time the timer ran; fall back to an existing entry, then
+  // the planned minutes.
+  const [actualMinutes, setActualMinutes] = useState(
+    existingEntry?.actualMinutes ?? (timedMinutes && timedMinutes > 0 ? timedMinutes : block.plannedMinutes),
+  );
   const [rating, setRating] = useState(existingEntry?.rating ?? 3);
   const [note, setNote] = useState(existingEntry?.note ?? "");
   const [fundamentals, setFundamentals] = useState<Fundamental[]>(existingEntry?.fundamentals ?? []);
@@ -782,7 +788,9 @@ export default function MindPage() {
   // ---------- Quick fundamental log handler ----------
   const handleQuickFundamentalLog = useCallback(
     (fundamental: Fundamental, category: MindCategory, data: { minutes: number; stretchLevel: StretchLevel; note: string }) => {
-      const blockId = `quick-${fundamental}-${dateKey}`;
+      // Unique per submission — logging the same fundamental twice in a day must
+      // create a distinct entry, not collide with (and update) the earlier one.
+      const blockId = `quick-${fundamental}-${dateKey}-${crypto.randomUUID().slice(0, 8)}`;
       const blockTitle = `${FUNDAMENTAL_LABELS[fundamental]} Practice`;
 
       addEntryMutation.mutate(
@@ -1065,6 +1073,11 @@ export default function MindPage() {
         <CompletionDialog
           block={completingBlock}
           existingEntry={getEntryForBlock(completingBlock.id)}
+          timedMinutes={
+            mindLog.active_block_id === completingBlock.id && mindLog.timer_started_at
+              ? Math.max(1, Math.round((Date.now() - new Date(mindLog.timer_started_at).getTime()) / 60000))
+              : undefined
+          }
           onSubmit={(data) => handleCompletion(completingBlock, data)}
           onClose={() => setCompletingBlock(null)}
         />

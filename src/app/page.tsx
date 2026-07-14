@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { useToday } from "@/hooks/use-date";
 import Link from "next/link";
 import { Dumbbell, ChevronRight } from "lucide-react";
 
@@ -33,8 +34,8 @@ import { ProteinBar } from "@/components/sprint/protein-bar";
 
 export default function DashboardPage() {
   const queryClient = useQueryClient();
-  const [today] = useState(() => new Date());
-  const dateKey = format(today, "yyyy-MM-dd");
+  const dateKey = useToday(); // live yyyy-MM-dd — survives crossing midnight with the app open
+  const today = useMemo(() => new Date(`${dateKey}T00:00:00`), [dateKey]);
   const dayName = format(today, "EEEE");
   const fullDate = format(today, "MMMM d, yyyy");
 
@@ -54,13 +55,11 @@ export default function DashboardPage() {
     queryFn: () => queries.getOrCreateDailyLog(dateKey),
   });
 
+  // Keep the query pure (a read must not write). generateInsight is idempotent;
+  // the "mark shown" write happens once in an effect after the insight resolves.
   const { data: insight } = useQuery({
     queryKey: ["insight", dateKey],
-    queryFn: async () => {
-      const result = await queries.generateInsight(dateKey);
-      if (result) await queries.markInsightShown(dateKey);
-      return result;
-    },
+    queryFn: () => queries.generateInsight(dateKey),
     staleTime: 30 * 60 * 1000,
   });
 
@@ -168,6 +167,16 @@ export default function DashboardPage() {
     if (!dailyLog) return 0;
     return dailyLog.meals.reduce((sum, m) => sum + m.calories, 0);
   }, [dailyLog]);
+
+  // Mark the insight shown once per date, after it resolves (kept out of the
+  // read query so the query stays a pure read).
+  const markedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (insight && markedRef.current !== dateKey) {
+      markedRef.current = dateKey;
+      queries.markInsightShown(dateKey).catch(() => { markedRef.current = null; });
+    }
+  }, [insight, dateKey]);
 
   // ---------- Optimistic helper ----------
   function optimisticDailyLog(updater: (prev: DailyLog) => DailyLog) {

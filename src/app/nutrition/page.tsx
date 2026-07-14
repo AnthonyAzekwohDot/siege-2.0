@@ -359,10 +359,10 @@ export default function NutritionPage() {
                       : "bg-[hsl(var(--destructive))]"
                   }`}
                   style={{
-                    width: `${Math.min(
+                    width: `${Math.max(0, Math.min(
                       100,
                       (deficitData.netDeficit / deficitData.deficitTarget) * 100
-                    )}%`,
+                    ))}%`,
                   }}
                 />
               </div>

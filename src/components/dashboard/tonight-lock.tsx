@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Moon, Utensils, Footprints } from "lucide-react";
+import { Moon, Utensils } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as queries from "@/lib/queries";
 import { calculateDailyBudget } from "@/lib/calculations";
@@ -60,7 +60,6 @@ export function TonightLock() {
       remainingCalories: remaining,
       inDeficit: remaining > 0,
       safeMeals: userProfile.safe_meals ?? [],
-      walkPresets: userProfile.walk_presets ?? [],
     };
   }, [dailyLog, userProfile, nutritionSummary]);
 
@@ -133,26 +132,9 @@ export function TonightLock() {
             </div>
           )}
 
-          {derived.walkPresets.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wide flex items-center gap-1.5">
-                <Footprints className="h-3 w-3" />
-                Quick walks
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {derived.walkPresets.map((walk) => (
-                  <Button
-                    key={walk.id}
-                    variant="outline"
-                    size="sm"
-                    disabled={addMealMutation.isPending}
-                  >
-                    {walk.name} (-{walk.calories} cal)
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* "Quick walks" preset buttons removed: they were non-functional, and
+              wiring them to add calories back would reintroduce the Phase 0
+              double-count (budget = TDEE − deficit; walks are not added back). */}
         </div>
       </DialogContent>
     </Dialog>

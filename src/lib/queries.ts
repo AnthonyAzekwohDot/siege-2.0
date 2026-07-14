@@ -866,10 +866,11 @@ export async function markInsightShown(today: string): Promise<void> {
     update.insight_week_start = currentWeekStart;
   }
 
-  await supabase
+  const { error } = await supabase
     .from("user_profiles")
     .update(update)
     .eq("id", "default-user");
+  if (error) throw error; // load-bearing: silent failure double-shows insights
 }
 
 export async function dismissInsight(today: string): Promise<void> {

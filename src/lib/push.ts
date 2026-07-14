@@ -64,6 +64,14 @@ export async function subscribeToPush(): Promise<PushSubscription | null> {
     return subscription;
   } catch (err) {
     console.error("Push subscription failed:", err);
+    // Roll back the browser subscription if the DB save failed, so the Settings
+    // toggle can't report "enabled" off a phantom that no server knows about.
+    try {
+      const existing = await registration.pushManager.getSubscription();
+      if (existing) await existing.unsubscribe();
+    } catch {
+      /* best-effort cleanup */
+    }
     return null;
   }
 }

@@ -19,11 +19,12 @@ function getSupabase() {
 let vapidReady = false;
 function ensureVapid() {
   if (vapidReady) return;
-  try {
-    webPush.setVapidDetails("mailto:anthonyazekwoh@gmail.com", VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
-  } catch {
-    /* already initialised (concurrent call) */
+  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+    throw new Error("VAPID keys are not configured");
   }
+  // setVapidDetails is idempotent; let a genuine bad-key error propagate rather
+  // than mark ready and fail every later send silently.
+  webPush.setVapidDetails("mailto:anthonyazekwoh@gmail.com", VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
   vapidReady = true;
 }
 

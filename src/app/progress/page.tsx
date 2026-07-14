@@ -543,30 +543,37 @@ export default function ProgressPage() {
   const overallStats = useMemo(() => {
     if (!allLogs || allLogs.length === 0) return null;
 
-    const totalSteps = allLogs.reduce((s, l) => s + l.steps, 0);
-    const totalCalories = allLogs.reduce(
-      (s, l) => s + l.meals.reduce((ms, m) => ms + m.calories, 0),
-      0
-    );
-    const workoutDays = allLogs.filter(
-      (l) => l.completed_exercises.length > 0
-    ).length;
-    const activeDays = allLogs.filter(
+    // Auto-created empty rows (every day the app is opened writes a daily_log)
+    // must not inflate "days tracked" or deflate the step average — count only
+    // days with real activity.
+    const trackedLogs = allLogs.filter(
       (l) =>
         l.steps > 0 ||
         l.meals.length > 0 ||
         l.completed_exercises.length > 0 ||
         l.morning_walk_completed ||
-        l.evening_walk_completed
+        l.evening_walk_completed ||
+        l.water_bottles > 0
+    );
+    if (trackedLogs.length === 0) return null;
+
+    const totalSteps = trackedLogs.reduce((s, l) => s + l.steps, 0);
+    const totalCalories = trackedLogs.reduce(
+      (s, l) => s + l.meals.reduce((ms, m) => ms + m.calories, 0),
+      0
+    );
+    const workoutDays = trackedLogs.filter(
+      (l) => l.completed_exercises.length > 0
     ).length;
+    const activeDays = trackedLogs.length;
 
     return {
       totalSteps,
       totalCalories,
       workoutDays,
       activeDays,
-      totalDays: allLogs.length,
-      avgSteps: Math.round(totalSteps / allLogs.length),
+      totalDays: trackedLogs.length,
+      avgSteps: Math.round(totalSteps / trackedLogs.length),
     };
   }, [allLogs]);
 

@@ -41,7 +41,7 @@ export function getSprintProgress(
   const dayRaw = idx + 1;
   const day = Math.min(SPRINT_DAYS, Math.max(1, dayRaw));
   const pct = Math.max(0, Math.min(1, dayRaw / SPRINT_DAYS));
-  const daysLeft = Math.max(0, SPRINT_DAYS - dayRaw);
+  const daysLeft = Math.max(0, SPRINT_DAYS - dayRaw + 1); // includes the current day: Day 90 → 1 left, done → 0
   return {
     active: true, day, dayRaw, totalDays: SPRINT_DAYS,
     pct, daysLeft, isComplete: dayRaw > SPRINT_DAYS, notStarted: dayRaw < 1,
