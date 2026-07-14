@@ -39,11 +39,14 @@
   --card-foreground: 0 0% 0%;
 
   /* Section accent colours */
-  --chart-1: 225 80% 56%;  /* Primary blue — home/general */
-  --chart-2: 14 90% 55%;   /* Workout — warm orange */
-  --chart-3: 152 60% 44%;  /* Nutrition — green */
-  --chart-4: 36 95% 55%;   /* Steps/walks — amber */
-  --chart-5: 270 70% 58%;  /* Mind — purple */
+  /* Accent hues, darkened enough to clear WCAG AA when used as small text or as
+     a fill behind white. --chart-2 stays bright: it is only used as a graphic
+     (the figure's dumbbell), never as small body text. */
+  --chart-1: 225 68% 46%;  /* Primary blue — home/general */
+  --chart-2: 14 90% 55%;   /* Workout — warm orange (graphic only) */
+  --chart-3: 152 72% 28%;  /* Nutrition — green */
+  --chart-4: 33 92% 33%;   /* Steps/walks — amber */
+  --chart-5: 270 60% 45%;  /* Mind — purple */
 
   /* Glass surfaces */
   --glass-light: rgba(255, 255, 255, 0.72);

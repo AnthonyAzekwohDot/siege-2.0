@@ -404,7 +404,7 @@ function StretchSelector({ value, onChange }: { value: StretchLevel; onChange: (
           }`}
         >
           <span className="font-medium">{opt.label}</span>
-          <span className="text-[11px] ml-2 opacity-90">{opt.description}</span>
+          <span className={`text-[11px] ml-2 ${value === opt.value ? "opacity-90" : "text-[hsl(var(--muted-foreground))]"}`}>{opt.description}</span>
         </button>
       ))}
     </div>
@@ -945,8 +945,8 @@ export default function MindPage() {
                       {block.title}
                     </p>
                     <span
-                      className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                      style={{ backgroundColor: `${getCategoryColor(block.category)}20`, color: getCategoryColor(block.category) }}
+                      className="text-[10px] px-2 py-0.5 rounded-full font-semibold text-[hsl(var(--foreground))]"
+                      style={{ backgroundColor: `${getCategoryColor(block.category)}26` }}
                     >
                       {block.category}
                     </span>
