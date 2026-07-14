@@ -74,7 +74,7 @@ export function BenchmarksCard({ sprintDay, today, sprintActive }: BenchmarksCar
             }`}
           >
             {BENCHMARK_LABELS[cp]}
-            <span className="block text-[10px] font-normal opacity-80">
+            <span className="block text-[10px] font-normal">
               {capturedCount(cp)}/{BENCHMARK_PROMPTS.length}
             </span>
           </button>
