@@ -20,7 +20,7 @@ import type {
 export const WORKOUT_SCHEDULE: DaySchedule[] = [
   {
     day: "monday",
-    focus: "Lower A — Quads + Hams",
+    focus: "Lower A · Quads + Hams",
     purpose: "The leg day that was missing. Knee-dominant lead.",
     morningWalk: true,
     eveningWalk: true,
@@ -55,7 +55,7 @@ export const WORKOUT_SCHEDULE: DaySchedule[] = [
   },
   {
     day: "tuesday",
-    focus: "Upper A — Pull Lead",
+    focus: "Upper A · Pull Lead",
     purpose: "Pull-led to undo the front-dominant posture.",
     morningWalk: true,
     eveningWalk: true,
@@ -96,7 +96,7 @@ export const WORKOUT_SCHEDULE: DaySchedule[] = [
   },
   {
     day: "wednesday",
-    focus: "Walk Only — Recovery",
+    focus: "Walk Only · Recovery",
     purpose: "True rest. Steady-state walk, inhaler nearby.",
     morningWalk: true,
     eveningWalk: true,
@@ -106,7 +106,7 @@ export const WORKOUT_SCHEDULE: DaySchedule[] = [
   },
   {
     day: "thursday",
-    focus: "Lower B — Hips + Unilateral",
+    focus: "Lower B · Hips + Unilateral",
     purpose: "Single-leg strength and posterior chain.",
     morningWalk: true,
     eveningWalk: true,
@@ -146,7 +146,7 @@ export const WORKOUT_SCHEDULE: DaySchedule[] = [
   },
   {
     day: "friday",
-    focus: "Upper B — Press Day",
+    focus: "Upper B · Press Day",
     purpose: "The one hard pressing day. Pull stays in to hold the ratio.",
     morningWalk: true,
     eveningWalk: true,
@@ -169,7 +169,7 @@ export const WORKOUT_SCHEDULE: DaySchedule[] = [
         homeAlt: "Both 15kg, slow tempo, or single-arm for more load.",
         caloriesPerSet: 10 },
       { name: "Incline Press / Push-up AMRAP", sets: 2, reps: "max", completed: false, isBodyweight: true,
-        instructions: "Feet-elevated push-ups (or incline DB press), last 2 sets to near failure. LOG THE REP COUNT each set — this is a rep PR you chase.",
+        instructions: "Feet-elevated push-ups (or incline DB press), last 2 sets to near failure. LOG THE REP COUNT each set. This is a rep PR you chase.",
         muscleGroups: ["upper chest", "shoulders", "triceps"],
         caloriesPerSet: 14 },
       { name: "DB Lateral Raise", sets: 3, reps: "12-20", repRange: [12, 20], completed: false,
@@ -191,7 +191,7 @@ export const WORKOUT_SCHEDULE: DaySchedule[] = [
   },
   {
     day: "saturday",
-    focus: "Optional — Pump / Rep-PR",
+    focus: "Optional · Pump / Rep-PR",
     purpose: "Skip freely if recovery is poor. Zero penalty.",
     morningWalk: true,
     eveningWalk: true,

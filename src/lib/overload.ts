@@ -47,7 +47,7 @@ function modeLoad(sets: { load: number | null }[]): number {
 
 /**
  * @param displaySets the (deload-adjusted) set count to show in the label.
- * @param isDeload when true, never advise adding load — it's a recovery week.
+ * @param isDeload when true, never advise adding load, it's a recovery week.
  * Readiness is judged against the exercise's FULL prescribed set count using only
  * COMPLETED sets at the actual working load, so partial/un-done/mixed-load
  * sessions can't trigger a false "level up".
@@ -76,7 +76,7 @@ export function getProgressionTarget(
       lastSummary: lastDone.length
         ? `${lastDone.length}×${Math.max(...lastDone.map((s) => s.reps ?? 0))} reps`
         : null,
-      suggestion: allBest > 0 ? `Beat ${allBest} reps — even by one.` : "Log your first set as a baseline.",
+      suggestion: allBest > 0 ? `Beat ${allBest} reps, even by one.` : "Log your first set as a baseline.",
     };
   }
 
@@ -115,7 +115,7 @@ export function getProgressionTarget(
   return {
     targetSets: displaySets, repRange: range, workingLoad, readyToLevelUp: false, lastSummary,
     suggestion: range
-      ? `Stay at ${workingLoad}kg — add reps toward ${range[1]} on every set.`
+      ? `Stay at ${workingLoad}kg, add reps toward ${range[1]} on every set.`
       : `Beat last session at ${workingLoad}kg.`,
   };
 }

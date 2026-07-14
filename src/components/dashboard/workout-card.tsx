@@ -88,7 +88,7 @@ export function WorkoutCard({
         <p className="text-xs text-[hsl(var(--muted-foreground))]">{schedule.purpose}</p>
         {phase.isDeload && (
           <p className="mt-1 text-xs font-medium text-[hsl(var(--chart-4))]">
-            Deload week — sets are cut, leave reps in the tank. Recover, do not push.
+            Deload week: sets are cut, leave reps in the tank. Recover, do not push.
           </p>
         )}
       </CardHeader>

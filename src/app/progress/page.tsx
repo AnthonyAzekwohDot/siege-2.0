@@ -653,7 +653,7 @@ export default function ProgressPage() {
           <div className="mb-3 flex items-center gap-2">
             <Trophy className="h-4 w-4 text-[hsl(var(--chart-4))]" />
             <h3 className="text-sm font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
-              Strength — Recent PRs
+              Strength · Recent PRs
             </h3>
           </div>
           <div className="space-y-2">
