@@ -25,8 +25,8 @@ export function OfflineBanner() {
   if (!offline) return null;
 
   return (
-    <div className="fixed top-14 left-0 right-0 z-50 flex items-center justify-center gap-2 bg-[hsl(var(--foreground))] px-3 py-1.5 text-center text-xs font-medium text-[hsl(var(--background))]">
-      <WifiOff className="h-3.5 w-3.5" />
+    <div role="status" aria-live="polite" className="fixed top-14 left-0 right-0 z-50 flex items-center justify-center gap-2 bg-[hsl(var(--foreground))] px-3 py-1.5 text-center text-xs font-medium text-[hsl(var(--background))]">
+      <WifiOff className="h-3.5 w-3.5" aria-hidden="true" />
       Offline. Keep the app open. Changes save when you reconnect.
     </div>
   );

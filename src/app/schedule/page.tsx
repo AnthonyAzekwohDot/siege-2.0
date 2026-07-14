@@ -64,6 +64,8 @@ function WeekOverview({
           <button
             key={day}
             onClick={() => onSelectDay(day)}
+            aria-pressed={isSelected}
+            aria-label={`${day}${isToday ? ", today" : ""}`}
             className={`flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl min-w-[52px] transition-all ${
               isSelected
                 ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"

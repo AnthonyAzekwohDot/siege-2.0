@@ -270,6 +270,8 @@ function WeightChart({ data }: { data: { date: string; weight_kg: number }[] }) 
       className="w-full"
       style={{ height: "120px" }}
       preserveAspectRatio="none"
+      role="img"
+      aria-label={`Weight trend: ${weights[0].toFixed(1)}kg to ${weights[weights.length - 1].toFixed(1)}kg, ${isDownTrend ? "trending down" : "trending up"}`}
     >
       {/* Grid lines */}
       {[0, 0.25, 0.5, 0.75, 1].map((frac) => {
@@ -387,7 +389,7 @@ function WeightCard() {
             if (currentWeight) setWeightInput(currentWeight);
             setShowForm(!showForm);
           }}
-          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity"
+          className="text-xs font-semibold min-h-[44px] px-3 py-1.5 rounded-lg bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity"
         >
           Log Weight
         </button>
@@ -418,7 +420,8 @@ function WeightCard() {
         <div className="flex items-center gap-2 mb-4 p-3 rounded-lg bg-[hsl(var(--muted))]">
           <button
             onClick={() => setWeightInput((v) => Math.round((v - 0.1) * 10) / 10)}
-            className="w-9 h-9 rounded-lg bg-[hsl(var(--background))] flex items-center justify-center text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] transition-colors"
+            aria-label="Decrease weight by 0.1kg"
+            className="w-11 h-11 rounded-lg bg-[hsl(var(--background))] flex items-center justify-center text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] transition-colors"
           >
             <Minus className="w-4 h-4" />
           </button>
@@ -427,20 +430,23 @@ function WeightCard() {
           </span>
           <button
             onClick={() => setWeightInput((v) => Math.round((v + 0.1) * 10) / 10)}
-            className="w-9 h-9 rounded-lg bg-[hsl(var(--background))] flex items-center justify-center text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] transition-colors"
+            aria-label="Increase weight by 0.1kg"
+            className="w-11 h-11 rounded-lg bg-[hsl(var(--background))] flex items-center justify-center text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] transition-colors"
           >
             <Plus className="w-4 h-4" />
           </button>
           <button
             onClick={() => mutation.mutate()}
             disabled={mutation.isPending}
-            className="w-9 h-9 rounded-lg bg-[hsl(var(--chart-3))] flex items-center justify-center text-white hover:opacity-90 transition-opacity ml-auto"
+            aria-label="Save weight"
+            className="w-11 h-11 rounded-lg bg-[hsl(var(--chart-3))] flex items-center justify-center text-white hover:opacity-90 transition-opacity ml-auto"
           >
             <Check className="w-4 h-4" />
           </button>
           <button
             onClick={() => setShowForm(false)}
-            className="w-9 h-9 rounded-lg bg-[hsl(var(--background))] flex items-center justify-center text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] transition-colors"
+            aria-label="Cancel"
+            className="w-11 h-11 rounded-lg bg-[hsl(var(--background))] flex items-center justify-center text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -680,7 +686,8 @@ export default function ProgressPage() {
       <div className="glass-card p-4 flex items-center justify-between">
         <button
           onClick={goToPrevMonth}
-          className="p-2 rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
+          aria-label="Previous month"
+          className="grid place-items-center h-11 w-11 rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -696,8 +703,9 @@ export default function ProgressPage() {
         </div>
         <button
           onClick={goToNextMonth}
+          aria-label="Next month"
           disabled={isCurrentMonth}
-          className="p-2 rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-30"
+          className="grid place-items-center h-11 w-11 rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-30"
         >
           <ChevronRight className="w-5 h-5" />
         </button>

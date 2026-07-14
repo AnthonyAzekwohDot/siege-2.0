@@ -82,7 +82,8 @@ export function FoodCamera({
       {/* Close button */}
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+        aria-label="Close camera"
+        className="absolute top-4 right-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
       >
         <X className="h-6 w-6" />
       </button>
@@ -105,7 +106,7 @@ export function FoodCamera({
 
         {/* Analysis overlay */}
         {isAnalyzing && (
-          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-3">
+          <div role="status" aria-live="polite" className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-3">
             <Loader2 className="h-10 w-10 text-white animate-spin" />
             <p className="text-white text-sm font-medium">{analysisStage}</p>
           </div>
@@ -116,6 +117,7 @@ export function FoodCamera({
       <div className="bg-black p-6 flex items-center justify-center safe-area-bottom">
         <button
           onClick={handleCapture}
+          aria-label="Capture photo"
           disabled={!cameraReady || isAnalyzing}
           className={cn(
             "w-18 h-18 rounded-full border-4 border-white flex items-center justify-center transition-all",

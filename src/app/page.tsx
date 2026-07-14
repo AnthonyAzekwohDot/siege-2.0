@@ -476,7 +476,9 @@ export default function DashboardPage() {
         {/* Fruit checkbox */}
         <button
           onClick={() => toggleFruitMutation.mutate()}
-          className="flex items-center gap-3 mt-4 py-2 w-full active:opacity-70 transition-opacity"
+          role="switch"
+          aria-checked={dailyLog.fruit_eaten}
+          className="flex items-center gap-3 mt-4 min-h-[44px] py-2 w-full active:opacity-70 transition-opacity"
         >
           <div
             className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
@@ -524,7 +526,7 @@ export default function DashboardPage() {
 
         {/* Error feedback */}
         {analysisError && (
-          <p className="text-xs text-[hsl(var(--destructive))] mt-2">{analysisError}</p>
+          <p role="alert" className="text-xs text-[hsl(var(--destructive))] mt-2">{analysisError}</p>
         )}
 
         {/* Action buttons */}

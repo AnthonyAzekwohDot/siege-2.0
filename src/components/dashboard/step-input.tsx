@@ -48,7 +48,7 @@ export function StepInput({
           Update Steps
         </span>
         {onCancel && (
-          <button onClick={onCancel} className="p-1.5 rounded-full active:bg-[rgba(0,0,0,0.04)]">
+          <button onClick={onCancel} aria-label="Cancel" className="flex h-11 w-11 items-center justify-center rounded-full active:bg-[rgba(0,0,0,0.04)]">
             <X className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
           </button>
         )}
@@ -60,6 +60,7 @@ export function StepInput({
           <button
             type="button"
             onClick={() => adjust(-500)}
+            aria-label="Subtract 500 steps"
             className="w-11 h-11 rounded-full bg-[rgba(0,0,0,0.05)] flex items-center justify-center active:bg-[rgba(0,0,0,0.1)] transition-colors"
           >
             <Minus className="h-5 w-5 text-[hsl(var(--foreground))]" />
@@ -68,6 +69,7 @@ export function StepInput({
           <input
             ref={inputRef}
             type="number"
+            aria-label="Step count"
             value={value}
             onChange={(e) => setValue(Math.max(0, parseInt(e.target.value) || 0))}
             className="w-32 text-center text-3xl font-bold bg-transparent outline-none text-[hsl(var(--foreground))] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -76,6 +78,7 @@ export function StepInput({
           <button
             type="button"
             onClick={() => adjust(500)}
+            aria-label="Add 500 steps"
             className="w-11 h-11 rounded-full bg-[rgba(0,0,0,0.05)] flex items-center justify-center active:bg-[rgba(0,0,0,0.1)] transition-colors"
           >
             <Plus className="h-5 w-5 text-[hsl(var(--foreground))]" />
@@ -89,7 +92,7 @@ export function StepInput({
               key={amount}
               type="button"
               onClick={() => adjust(amount)}
-              className="px-3 py-1.5 rounded-full text-xs font-medium bg-[rgba(0,0,0,0.04)] text-[hsl(var(--muted-foreground))] active:bg-[rgba(0,0,0,0.08)] transition-colors"
+              className="min-h-[44px] px-3 py-1.5 rounded-full text-xs font-medium bg-[rgba(0,0,0,0.04)] text-[hsl(var(--muted-foreground))] active:bg-[rgba(0,0,0,0.08)] transition-colors"
             >
               +{amount.toLocaleString()}
             </button>

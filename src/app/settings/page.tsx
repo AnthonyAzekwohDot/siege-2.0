@@ -30,27 +30,33 @@ const ACTIVITY_LABELS: Record<string, string> = {
 function Toggle({
   checked,
   onChange,
+  label,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
+  label?: string;
 }) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
+      aria-label={label}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ${
-        checked
-          ? "bg-[hsl(var(--primary))]"
-          : "bg-[rgba(0,0,0,0.1)]"
-      }`}
+      // 44px tap target; the visible track stays 28px tall, centred inside.
+      className="relative inline-flex h-11 w-12 shrink-0 cursor-pointer items-center justify-center"
     >
       <span
-        className={`pointer-events-none block h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-          checked ? "translate-x-6" : "translate-x-1"
+        className={`relative flex h-7 w-12 items-center rounded-full transition-colors duration-200 ${
+          checked ? "bg-[hsl(var(--primary))]" : "bg-[rgba(0,0,0,0.1)]"
         }`}
-      />
+      >
+        <span
+          className={`pointer-events-none block h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+            checked ? "translate-x-6" : "translate-x-1"
+          }`}
+        />
+      </span>
     </button>
   );
 }
@@ -62,13 +68,14 @@ function FormRow({
   label: string;
   children: React.ReactNode;
 }) {
+  // A <label> wrapping a single control gives it a native accessible name.
   return (
-    <div className="flex items-center justify-between py-3 border-b border-[hsl(var(--border))] last:border-0">
+    <label className="flex items-center justify-between py-3 border-b border-[hsl(var(--border))] last:border-0">
       <span className="text-sm font-medium text-[hsl(var(--foreground))]">
         {label}
       </span>
       <div className="w-[140px] flex justify-end">{children}</div>
-    </div>
+    </label>
   );
 }
 
@@ -360,6 +367,7 @@ export default function SettingsPage() {
           <FormRow label="Has Asthma">
             <Toggle
               checked={form.has_asthma ?? false}
+              label="Has asthma"
               onChange={(v) => updateField("has_asthma", v)}
             />
           </FormRow>
@@ -417,6 +425,7 @@ export default function SettingsPage() {
         <div>
           <FormRow label="Enabled">
             <Toggle
+              label="Enable tonight check-in"
               checked={form.tonight_lock_enabled ?? true}
               onChange={(v) => updateField("tonight_lock_enabled", v)}
             />

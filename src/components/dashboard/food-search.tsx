@@ -133,6 +133,7 @@ export function FoodSearch({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search foods..."
+            aria-label="Search foods"
             className="pl-9"
           />
         </div>
@@ -214,18 +215,20 @@ export function FoodSearch({
                           onClick={() =>
                             setServings((s) => Math.max(1, s - 1))
                           }
-                          className="w-7 h-7 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center active:bg-[rgba(0,0,0,0.08)] transition-colors"
+                          aria-label="Fewer servings"
+                          className="flex h-11 w-11 items-center justify-center rounded-full active:bg-[rgba(0,0,0,0.06)] transition-colors"
                         >
-                          <Minus className="w-3.5 h-3.5 text-[hsl(var(--foreground))]" />
+                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[rgba(0,0,0,0.04)]"><Minus className="w-3.5 h-3.5 text-[hsl(var(--foreground))]" /></span>
                         </button>
                         <span className="text-sm font-bold text-[hsl(var(--foreground))] min-w-[2ch] text-center">
                           {servings}x
                         </span>
                         <button
                           onClick={() => setServings((s) => s + 1)}
-                          className="w-7 h-7 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center active:bg-[rgba(0,0,0,0.08)] transition-colors"
+                          aria-label="More servings"
+                          className="flex h-11 w-11 items-center justify-center rounded-full active:bg-[rgba(0,0,0,0.06)] transition-colors"
                         >
-                          <Plus className="w-3.5 h-3.5 text-[hsl(var(--foreground))]" />
+                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[rgba(0,0,0,0.04)]"><Plus className="w-3.5 h-3.5 text-[hsl(var(--foreground))]" /></span>
                         </button>
                       </div>
                     </div>
@@ -249,9 +252,9 @@ export function FoodSearch({
                               setSelectedPortion(portion.label);
                               handleLogPortion(food, portion);
                             }}
-                            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                            className={`min-h-[44px] px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                               isSelected
-                                ? "bg-[hsl(var(--chart-3))]/15 text-[hsl(var(--chart-3))]"
+                                ? "bg-[hsl(var(--chart-3))] text-white"
                                 : "bg-[rgba(0,0,0,0.04)] active:bg-[rgba(0,0,0,0.08)]"
                             }`}
                           >
@@ -274,7 +277,7 @@ export function FoodSearch({
               onOpenChange(false);
               onCustomMeal();
             }}
-            className="flex items-center justify-center gap-2 w-full mt-3 py-2.5 text-sm font-medium text-[hsl(var(--primary))] active:opacity-70 transition-opacity"
+            className="flex items-center justify-center gap-2 w-full mt-3 min-h-[44px] py-2.5 text-sm font-medium text-[hsl(var(--primary))] active:opacity-70 transition-opacity"
           >
             <PenLine className="w-3.5 h-3.5" />
             Custom meal

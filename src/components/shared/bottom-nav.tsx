@@ -33,15 +33,19 @@ export function BottomNav() {
             <Link
               key={href}
               href={href}
+              aria-label={label}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
-                "flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all duration-200",
+                // Inactive labels are bright enough to clear WCAG AA at 10px; the
+                // active tab is distinguished by a subtle chip + bolder icon.
+                "flex min-h-[44px] flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-xl transition-all duration-200",
                 isActive
-                  ? "text-white"
-                  : "text-[rgba(255,255,255,0.45)]"
+                  ? "bg-white/12 text-white"
+                  : "text-[rgba(255,255,255,0.92)]"
               )}
             >
-              <Icon className="h-[22px] w-[22px]" strokeWidth={isActive ? 2.2 : 1.8} />
-              <span className="text-[10px] font-medium">{label}</span>
+              <Icon className="h-[22px] w-[22px]" strokeWidth={isActive ? 2.4 : 1.8} />
+              <span className={cn("text-[10px]", isActive ? "font-semibold" : "font-medium")}>{label}</span>
             </Link>
           );
         })}

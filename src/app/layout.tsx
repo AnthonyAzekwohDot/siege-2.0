@@ -31,7 +31,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  userScalable: false,
+  // Pinch-to-zoom stays enabled (WCAG 1.4.4).
 };
 
 export default function RootLayout({

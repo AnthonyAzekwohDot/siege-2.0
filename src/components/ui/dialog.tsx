@@ -14,19 +14,24 @@ function Dialog({ open, onOpenChange, children }: DialogProps) {
   React.useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === "Escape") onOpenChange(false);
+      };
+      window.addEventListener("keydown", onKey);
+      return () => {
+        document.body.style.overflow = "";
+        window.removeEventListener("keydown", onKey);
+      };
     }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [open]);
+    document.body.style.overflow = "";
+  }, [open, onOpenChange]);
 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50">
+    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true">
       <div
+        aria-hidden="true"
         className="fixed inset-0 bg-black/30 backdrop-blur-xl"
         onClick={() => onOpenChange(false)}
       />
@@ -63,9 +68,12 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
         {onClose && (
           <button
             onClick={onClose}
-            className="absolute right-4 top-4 w-7 h-7 rounded-full bg-[rgba(0,0,0,0.06)] flex items-center justify-center transition-colors hover:bg-[rgba(0,0,0,0.1)]"
+            aria-label="Close"
+            className="absolute right-1.5 top-1.5 flex h-11 w-11 items-center justify-center rounded-full"
           >
-            <X className="h-3.5 w-3.5 text-[hsl(var(--muted-foreground))]" />
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[rgba(0,0,0,0.06)] transition-colors hover:bg-[rgba(0,0,0,0.1)]">
+              <X className="h-3.5 w-3.5 text-[hsl(var(--muted-foreground))]" />
+            </span>
           </button>
         )}
         {children}

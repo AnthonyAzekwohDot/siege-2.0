@@ -99,7 +99,7 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
   return (
     <div className="flex gap-1">
       {[1, 2, 3, 4, 5].map((star) => (
-        <button key={star} onClick={() => onChange(star)} className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center">
+        <button key={star} onClick={() => onChange(star)} aria-label={`${star} star${star>1?"s":""}`} aria-pressed={star <= value} className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center">
           <Star className={`w-6 h-6 transition-colors ${star <= value ? "fill-[hsl(var(--chart-4))] text-[hsl(var(--chart-4))]" : "text-[hsl(var(--muted-foreground))]"}`} />
         </button>
       ))}
@@ -130,7 +130,8 @@ function FundamentalChips({
               if (isSelected) onChange(selected.filter((x) => x !== f));
               else onChange([...selected, f]);
             }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+            aria-pressed={isSelected}
+            className={`min-h-[44px] px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               isSelected
                 ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
                 : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"
@@ -208,7 +209,7 @@ function CoverageRow({ item, colorVar, onTap }: { item: CoverageItem; colorVar: 
     <button
       type="button"
       onClick={onTap}
-      className="flex items-center gap-2 py-1.5 w-full text-left touch-manipulation active:bg-[hsl(var(--muted))/0.5] rounded transition-colors"
+      className="flex min-h-[44px] items-center gap-2 py-1.5 w-full text-left touch-manipulation active:bg-[hsl(var(--muted))/0.5] rounded transition-colors"
     >
       <div className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: item.count > 0 ? `hsl(var(--${colorVar}) / ${0.2 + item.intensity * 0.8})` : "hsl(var(--muted))" }} />
       <span className="text-xs text-[hsl(var(--foreground))] flex-1">{item.label}</span>
@@ -286,7 +287,7 @@ function QuickFundamentalLog({
             <h3 className="text-lg font-bold text-[hsl(var(--foreground))]">{FUNDAMENTAL_LABELS[fundamental]}</h3>
             <p className="text-xs text-[hsl(var(--muted-foreground))] capitalize">{category} practice</p>
           </div>
-          <button onClick={onClose} className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]">
+          <button onClick={onClose} aria-label="Close" className="flex h-11 w-11 items-center justify-center text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]">
             <XCircle className="w-5 h-5" />
           </button>
         </div>
@@ -298,7 +299,8 @@ function QuickFundamentalLog({
               <button
                 key={m}
                 onClick={() => setMinutes(m)}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                aria-pressed={minutes === m}
+                className={`flex-1 min-h-[44px] py-2 rounded-lg text-sm font-medium transition-colors ${
                   minutes === m
                     ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
                     : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"
@@ -319,6 +321,7 @@ function QuickFundamentalLog({
           <p className="text-xs font-semibold uppercase text-[hsl(var(--muted-foreground))] mb-2">Note (optional)</p>
           <textarea
             value={note}
+            aria-label="Session note"
             onChange={(e) => setNote(e.target.value)}
             rows={2}
             placeholder="What did you drill?"
@@ -389,7 +392,8 @@ function StretchSelector({ value, onChange }: { value: StretchLevel; onChange: (
         <button
           key={opt.value}
           onClick={() => onChange(opt.value)}
-          className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+          aria-pressed={value === opt.value}
+          className={`w-full min-h-[44px] text-left px-3 py-2 rounded-lg text-sm transition-colors ${
             value === opt.value
               ? opt.value === "breakthrough"
                 ? "bg-[hsl(var(--chart-3))] text-white"
@@ -400,7 +404,7 @@ function StretchSelector({ value, onChange }: { value: StretchLevel; onChange: (
           }`}
         >
           <span className="font-medium">{opt.label}</span>
-          <span className="text-[10px] ml-2 opacity-80">{opt.description}</span>
+          <span className="text-[11px] ml-2 opacity-90">{opt.description}</span>
         </button>
       ))}
     </div>
@@ -461,7 +465,7 @@ function CompletionDialog({
       <div className="w-full max-w-2xl bg-[hsl(var(--card))] rounded-t-2xl p-5 space-y-4 max-h-[85dvh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-bold text-[hsl(var(--foreground))]">{block.title}</h3>
-          <button onClick={onClose} className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]">
+          <button onClick={onClose} aria-label="Close" className="flex h-11 w-11 items-center justify-center text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]">
             <XCircle className="w-5 h-5" />
           </button>
         </div>
@@ -476,7 +480,8 @@ function CompletionDialog({
                 <button
                   key={opt.value}
                   onClick={() => setStatus(opt.value)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  aria-pressed={status === opt.value}
+                  className={`flex-1 flex min-h-[44px] items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors ${
                     status === opt.value
                       ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
                       : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"
@@ -516,6 +521,7 @@ function CompletionDialog({
             </p>
             <input
               type="text"
+              aria-label="Master reference"
               value={masterReference}
               onChange={(e) => setMasterReference(e.target.value)}
               placeholder="e.g. Caravaggio, Kehinde Wiley, Sam Spratt..."
@@ -529,6 +535,7 @@ function CompletionDialog({
           <p className="text-xs font-semibold uppercase text-[hsl(var(--muted-foreground))] mb-2">Actual Minutes</p>
           <input
             type="number"
+            aria-label="Actual minutes"
             value={actualMinutes}
             onChange={(e) => setActualMinutes(Number(e.target.value))}
             min={0}
@@ -548,6 +555,7 @@ function CompletionDialog({
           <p className="text-xs font-semibold uppercase text-[hsl(var(--muted-foreground))] mb-2">Notes</p>
           <textarea
             value={note}
+            aria-label="Session note"
             onChange={(e) => setNote(e.target.value)}
             rows={2}
             placeholder="What did you learn? What's still weak?"
@@ -563,7 +571,7 @@ function CompletionDialog({
           <div className="flex items-center gap-3">
             {artefactUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={artefactUrl} alt="artefact" className="w-16 h-16 rounded-lg object-cover" />
+              <img src={artefactUrl} alt="Your session artefact" className="w-16 h-16 rounded-lg object-cover" />
             ) : (
               <div className="w-16 h-16 rounded-lg bg-[hsl(var(--muted))] flex items-center justify-center text-[hsl(var(--muted-foreground))]">
                 {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
@@ -574,12 +582,13 @@ function CompletionDialog({
               <input
                 type="file"
                 accept="image/*"
+                aria-label="Upload artefact photo"
                 className="hidden"
                 onChange={(e) => handleArtefact(e.target.files?.[0])}
               />
             </label>
           </div>
-          {uploadErr && <p className="text-[11px] text-[hsl(var(--destructive))] mt-1.5">{uploadErr}</p>}
+          {uploadErr && <p role="alert" className="text-[11px] text-[hsl(var(--destructive))] mt-1.5">{uploadErr}</p>}
         </div>
 
         {/* Submit */}
@@ -879,7 +888,7 @@ export default function MindPage() {
             <p className="text-xs text-[hsl(var(--muted-foreground))]">3 blocks for tough days</p>
           </div>
         </div>
-        <button onClick={() => toggleMinWinMutation.mutate()} className="p-1">
+        <button onClick={() => toggleMinWinMutation.mutate()} role="switch" aria-checked={mindLog.minimum_win_mode} aria-label="Minimum win mode" className="flex h-11 w-11 items-center justify-center">
           {mindLog.minimum_win_mode ? (
             <ToggleRight className="w-8 h-8 text-[hsl(var(--primary))]" />
           ) : (
@@ -903,7 +912,7 @@ export default function MindPage() {
             </div>
             <div className="flex items-center gap-3">
               <TimerDisplay startedAt={mindLog.timer_started_at} />
-              <button onClick={handleStopTimer} className="p-2 rounded-lg bg-[hsl(var(--destructive))] text-white hover:opacity-90 transition-colors">
+              <button onClick={handleStopTimer} aria-label="Stop timer" className="flex h-11 w-11 items-center justify-center rounded-lg bg-[hsl(var(--destructive))] text-white hover:opacity-90 transition-colors">
                 <Square className="w-4 h-4" />
               </button>
             </div>
@@ -997,6 +1006,7 @@ export default function MindPage() {
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); handleStartTimer(block); }}
+                      aria-label={`Start ${block.title}`}
                       disabled={!!mindLog.active_block_id && mindLog.active_block_id !== block.id}
                       className="w-[48px] h-[48px] flex items-center justify-center rounded-lg bg-[hsl(var(--primary))] text-white hover:opacity-90 transition-colors disabled:opacity-40 cursor-pointer touch-manipulation"
                     >
@@ -1007,6 +1017,7 @@ export default function MindPage() {
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); handleStopTimer(); }}
+                      aria-label="Stop timer"
                       className="w-[48px] h-[48px] flex items-center justify-center rounded-lg bg-[hsl(var(--destructive))] text-white hover:opacity-90 transition-colors cursor-pointer touch-manipulation"
                     >
                       <Square className="w-5 h-5" />
@@ -1015,6 +1026,7 @@ export default function MindPage() {
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setCompletingBlock(block); }}
+                    aria-label={`Complete ${block.title}`}
                     className={`w-[48px] h-[48px] flex items-center justify-center rounded-lg transition-colors cursor-pointer touch-manipulation ${
                       isCompleted
                         ? "bg-[hsl(var(--chart-3))/0.15] text-[hsl(var(--chart-3))]"

@@ -491,7 +491,8 @@ export default function NutritionPage() {
                 </span>
                 <button
                   onClick={() => deleteMealMutation.mutate(meal.id)}
-                  className="p-1.5 rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive))/0.1] transition-colors"
+                  aria-label={`Delete ${meal.name}`}
+                  className="flex h-11 w-11 items-center justify-center rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive))/0.1] transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -505,7 +506,9 @@ export default function NutritionPage() {
       <section className="glass-card p-4">
         <button
           onClick={() => toggleFruitMutation.mutate()}
-          className="flex items-center gap-3 w-full"
+          role="switch"
+          aria-checked={dailyLog.fruit_eaten}
+          className="flex min-h-[44px] items-center gap-3 w-full"
         >
           <div
             className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
@@ -529,7 +532,7 @@ export default function NutritionPage() {
 
       {/* ---------- Error feedback ---------- */}
       {analysisError && (
-        <p className="text-xs text-[hsl(var(--destructive))]">{analysisError}</p>
+        <p role="alert" className="text-xs text-[hsl(var(--destructive))]">{analysisError}</p>
       )}
 
       {/* ---------- Action Buttons ---------- */}

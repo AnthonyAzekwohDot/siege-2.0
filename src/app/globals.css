@@ -116,7 +116,9 @@
 
   /* Bottom nav — floating dark frosted glass pill */
   .glass-nav {
-    background: var(--glass-dark);
+    /* Darker than the shared glass token so label text clears WCAG AA
+       regardless of the page colour behind the frosted bar. */
+    background: rgba(24, 24, 27, 0.86);
     backdrop-filter: blur(50px) saturate(2);
     -webkit-backdrop-filter: blur(50px) saturate(2);
     border: 0.5px solid var(--glass-dark-border);

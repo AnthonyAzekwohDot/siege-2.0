@@ -26,7 +26,8 @@ export function Header() {
         {pathname !== "/settings" && (
           <Link
             href="/settings"
-            className="flex items-center justify-center h-10 w-10 rounded-full text-[hsl(var(--muted-foreground))] active:bg-[rgba(0,0,0,0.04)] transition-colors"
+            aria-label="Settings"
+            className="flex items-center justify-center h-11 w-11 rounded-full text-[hsl(var(--muted-foreground))] active:bg-[rgba(0,0,0,0.04)] transition-colors"
           >
             <Settings className="h-5 w-5" strokeWidth={1.8} />
           </Link>

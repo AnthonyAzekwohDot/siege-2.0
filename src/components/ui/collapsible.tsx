@@ -55,10 +55,11 @@ function CollapsibleTrigger({
   onClick,
   ...props
 }: CollapsibleTriggerProps) {
-  const { toggle } = useCollapsible();
+  const { toggle, isOpen } = useCollapsible();
 
   return (
     <button
+      aria-expanded={isOpen}
       className={cn("flex w-full items-center", className)}
       onClick={(e) => {
         toggle();
@@ -84,6 +85,8 @@ function CollapsibleContent({
   return (
     <div
       ref={contentRef}
+      aria-hidden={!isOpen}
+      inert={!isOpen ? true : undefined}
       className={cn(
         "overflow-hidden transition-all duration-300 ease-in-out",
         isOpen ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0",

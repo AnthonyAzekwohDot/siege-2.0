@@ -104,13 +104,13 @@ export function FoodReviewSheet({
             </div>
             <div className="flex flex-wrap gap-1.5 pl-6">
               {clarificationNeeded.options.map((option) => (
-                <Badge
+                <button
                   key={option}
-                  variant="outline"
-                  className="cursor-pointer hover:bg-[hsl(var(--accent))]"
+                  type="button"
+                  className="min-h-[44px] rounded-full border border-[hsl(var(--border))] px-3 text-xs font-medium hover:bg-[hsl(var(--accent))] transition-colors"
                 >
                   {option}
-                </Badge>
+                </button>
               ))}
             </div>
           </div>
@@ -130,17 +130,19 @@ export function FoodReviewSheet({
               <div className="flex-1 space-y-1.5">
                 <Input
                   value={item.name}
+                  aria-label={`Item ${index + 1} name`}
                   onChange={(e) => updateItemName(index, e.target.value)}
-                  className="h-7 text-sm font-medium border-none bg-transparent p-0 focus-visible:ring-0"
+                  className="h-11 text-sm font-medium border-none bg-transparent p-0"
                 />
                 <div className="flex items-center gap-2">
                   <Input
                     type="number"
                     value={item.portionValue}
+                    aria-label={`Item ${index + 1} portion`}
                     onChange={(e) =>
                       updateItemPortion(index, parseFloat(e.target.value) || 0)
                     }
-                    className="h-6 w-16 text-xs border-none bg-transparent p-0 focus-visible:ring-0"
+                    className="h-11 w-16 text-xs border-none bg-transparent p-0"
                   />
                   <span className="text-xs text-[hsl(var(--muted-foreground))]">
                     {item.portionUnit}
@@ -152,10 +154,11 @@ export function FoodReviewSheet({
                 <Input
                   type="number"
                   value={item.calories}
+                  aria-label={`Item ${index + 1} calories`}
                   onChange={(e) =>
                     updateItemCalories(index, parseInt(e.target.value, 10) || 0)
                   }
-                  className="h-8 w-20 text-sm font-semibold text-right border-none bg-transparent p-0 focus-visible:ring-0"
+                  className="h-11 w-20 text-sm font-semibold text-right border-none bg-transparent p-0"
                 />
                 <span className="text-xs text-[hsl(var(--muted-foreground))]">
                   kcal
