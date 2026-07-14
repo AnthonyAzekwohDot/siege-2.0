@@ -12,22 +12,33 @@ export type Point = [number, number];
 export type Archetype =
   | "squat"
   | "hinge"
+  | "slRDL"
   | "lunge"
   | "splitSquat"
   | "stepUp"
-  | "calfRaise"
-  | "row"
-  | "pressV"
-  | "pressH"
+  | "calfStand"
+  | "calfSeat"
+  | "rowOneArm"
+  | "rowChest"
+  | "pressOverhead"
+  | "pressSeated"
+  | "pressFloor"
+  | "pressIncline"
   | "pushup"
   | "lateralRaise"
   | "rearFly"
   | "curl"
+  | "hammerCurl"
   | "tricepsExt"
-  | "coreHold";
+  | "deadBug"
+  | "hollow"
+  | "plank";
 
-/** What the hands hold, draws at the wrist. */
-export type Implement = "none" | "dumbbell" | "goblet";
+/** What the hands hold, draws at the wrist. dumbbellV = neutral (hammer) grip. */
+export type Implement = "none" | "dumbbell" | "dumbbellV" | "goblet";
+
+/** Equipment drawn behind the figure to disambiguate the movement. */
+export type Equipment = "none" | "seat" | "inclineBench" | "box" | "stepBlock" | "rearBox";
 
 export interface Pose {
   hip: Point;
@@ -50,6 +61,8 @@ export interface Movement {
   implement: Implement;
   /** Where the figure rests: "stand" | "floor". Controls the ground/mat. */
   base: "stand" | "floor";
+  /** Equipment drawn behind the figure (bench/seat/box). */
+  equipment?: Equipment;
   /** Seconds for one A->B sweep. */
   period?: number;
 }
@@ -152,339 +165,202 @@ const STAND: Pose = {
 const from = (over: Partial<Pose>): Pose => ({ ...STAND, ...over });
 
 // ── The movements ───────────────────────────────────────────────────────────
+// Every scheduled exercise gets a visually DISTINCT figure. Where two exercises
+// are the same lift (goblet squat + its burnout) they share; otherwise each has
+// its own pose, and equipment (bench / seat / box) disambiguates the rest.
 export const MOVEMENTS: Record<Archetype, Movement> = {
-  // Knee-dominant squat, holding a goblet at the chest.
+  // Goblet squat — deep knee-bend, weight held at the chest.
   squat: {
-    archetype: "squat",
-    base: "stand",
-    implement: "goblet",
+    archetype: "squat", base: "stand", implement: "goblet", period: 2.6,
     a: from({ upperArm: 128, foreArm: -55 }),
-    b: {
-      hip: [42, 92],
-      torso: -72,
-      upperArm: 122,
-      foreArm: -48,
-      thigh: 22,
-      shin: 108,
-      foot: 0,
-    },
-    period: 2.6,
+    b: { hip: [42, 92], torso: -72, upperArm: 122, foreArm: -48, thigh: 22, shin: 108, foot: 0 },
   },
 
-  // Hip hinge (RDL). Back flat, hips travel back, weights track the shins.
+  // Two-leg hip hinge (RDL) — always bent over, dumbbells tracking the shins.
   hinge: {
-    archetype: "hinge",
-    base: "stand",
-    implement: "dumbbell",
-    a: from({ upperArm: 92, foreArm: 90 }),
-    b: {
-      hip: [50, 72],
-      torso: -18,
-      upperArm: 78,
-      foreArm: 82,
-      thigh: 96,
-      shin: 88,
-      foot: 0,
-    },
-    period: 2.8,
+    archetype: "hinge", base: "stand", implement: "dumbbell", period: 2.6,
+    a: { hip: [49, 73], torso: -46, upperArm: 80, foreArm: 86, thigh: 92, shin: 88, foot: 0 },
+    b: { hip: [50, 72], torso: -14, upperArm: 78, foreArm: 86, thigh: 96, shin: 86, foot: 0 },
   },
 
-  // Forward lunge, front knee bends, back knee drops toward the floor.
+  // Single-leg RDL — one leg planted, the other reaches straight back (arabesque).
+  slRDL: {
+    archetype: "slRDL", base: "stand", implement: "dumbbell", period: 2.8,
+    a: { hip: [50, 73], torso: -42, upperArm: 82, foreArm: 88, thigh: 90, shin: 90, foot: 0,
+         thighB: 150, shinB: 168, footB: 178 },
+    b: { hip: [55, 72], torso: -8, upperArm: 84, foreArm: 90, thigh: 90, shin: 90, foot: 0,
+         thighB: 190, shinB: 192, footB: 196 },
+  },
+
+  // Forward lunge — always a split stance, back knee dropping to the floor.
   lunge: {
-    archetype: "lunge",
-    base: "stand",
-    implement: "dumbbell",
-    a: from({
-      upperArm: 90,
-      foreArm: 90,
-      thighB: 90,
-      shinB: 90,
-      footB: 0,
-    }),
-    b: {
-      hip: [44, 90],
-      torso: -88,
-      upperArm: 90,
-      foreArm: 90,
-      thigh: 42, // front thigh forward-down
-      shin: 96, // front shin near vertical, foot planted ahead
-      foot: 0,
-      thighB: 132, // back thigh sweeps down and behind
-      shinB: 58, // back shin drops, knee toward the floor
-      footB: -18, // ball of the back foot
-    },
-    period: 2.8,
+    archetype: "lunge", base: "stand", implement: "dumbbell", period: 2.6,
+    a: { hip: [45, 84], torso: -88, upperArm: 90, foreArm: 90, thigh: 55, shin: 96, foot: 0,
+         thighB: 120, shinB: 72, footB: -18 },
+    b: { hip: [44, 90], torso: -88, upperArm: 90, foreArm: 90, thigh: 42, shin: 96, foot: 0,
+         thighB: 132, shinB: 58, footB: -18 },
   },
 
-  // Bulgarian split squat, rear foot elevated, drop straight down.
+  // Bulgarian split squat — rear foot elevated on a box behind.
   splitSquat: {
-    archetype: "splitSquat",
-    base: "stand",
-    implement: "dumbbell",
-    a: from({
-      thigh: 74,
-      shin: 96,
-      thighB: 118,
-      shinB: 70,
-      footB: -30,
-    }),
-    b: {
-      hip: [46, 92],
-      torso: -84,
-      upperArm: 92,
-      foreArm: 90,
-      thigh: 40,
-      shin: 100,
-      foot: 0,
-      thighB: 150,
-      shinB: 40,
-      footB: -50,
-    },
-    period: 2.6,
+    archetype: "splitSquat", base: "stand", implement: "dumbbell", equipment: "rearBox", period: 2.6,
+    a: from({ thigh: 74, shin: 96, thighB: 118, shinB: 70, footB: -30 }),
+    b: { hip: [46, 92], torso: -84, upperArm: 92, foreArm: 90, thigh: 40, shin: 100, foot: 0,
+         thighB: 150, shinB: 40, footB: -50 },
   },
 
-  // Step-up, lead foot planted on the box, drive up to standing on it.
+  // Step-up — lead foot planted on the box, drive up to standing on it.
   stepUp: {
-    archetype: "stepUp",
-    base: "stand",
-    implement: "dumbbell",
-    // Bottom: hips low, lead foot planted on the box top, trail foot on the floor behind.
-    a: {
-      hip: [40, 88],
-      torso: -80,
-      upperArm: 92,
-      foreArm: 90,
-      thigh: -8, // lead thigh forward, knee high so the foot lands on the box top
-      shin: 104, // lead shin drops to the raised foot (~box top)
-      foot: 0,
-      thighB: 118, // trail leg reaches down and back to the floor
-      shinB: 84,
-      footB: 0,
-    },
-    // Top: stood tall on the box, trail knee driven up in front.
-    b: {
-      hip: [46, 66],
-      torso: -88,
-      upperArm: 92,
-      foreArm: 90,
-      thigh: 88, // stance leg straight down onto the box
-      shin: 90,
-      foot: 0,
-      thighB: 40, // trail knee driven up
-      shinB: 96,
-      footB: 0,
-    },
-    period: 2.8,
+    archetype: "stepUp", base: "stand", implement: "dumbbell", equipment: "box", period: 2.8,
+    a: { hip: [40, 88], torso: -80, upperArm: 92, foreArm: 90, thigh: -8, shin: 104, foot: 0,
+         thighB: 118, shinB: 84, footB: 0 },
+    b: { hip: [46, 66], torso: -88, upperArm: 92, foreArm: 90, thigh: 88, shin: 90, foot: 0,
+         thighB: 40, shinB: 96, footB: 0 },
   },
 
-  // Calf raise, rise onto the toes.
-  calfRaise: {
-    archetype: "calfRaise",
-    base: "stand",
-    implement: "dumbbell",
-    a: from({ hip: [46, 76], shin: 90, foot: 0 }),
-    b: from({ hip: [46, 68], shin: 82, foot: -34 }),
-    period: 2.2,
+  // Standing calf raise — forefoot on a step block, heel drives up.
+  calfStand: {
+    archetype: "calfStand", base: "stand", implement: "dumbbell", equipment: "stepBlock", period: 2.2,
+    a: from({ hip: [46, 74], shin: 90, foot: -8 }),
+    b: from({ hip: [46, 67], shin: 82, foot: -42 }),
   },
 
-  // Bent-over row, hinge held, pull the elbow up to the ribs.
-  row: {
-    archetype: "row",
-    base: "stand",
-    implement: "dumbbell",
-    a: {
-      hip: [50, 74],
-      torso: -22,
-      upperArm: 96,
-      foreArm: 96,
-      thigh: 90,
-      shin: 84,
-      foot: 0,
-    },
-    b: {
-      hip: [50, 74],
-      torso: -22,
-      upperArm: 210, // elbow drives up and back (short-path equivalent of -150)
-      foreArm: 120,
-      thigh: 90,
-      shin: 84,
-      foot: 0,
-    },
-    period: 2.2,
+  // Seated calf raise — seated on a bench, dumbbell on the knee, heel lifts.
+  calfSeat: {
+    archetype: "calfSeat", base: "stand", implement: "dumbbell", equipment: "seat", period: 2.2,
+    a: { hip: [38, 92], torso: -90, upperArm: 116, foreArm: 20, thigh: 2, shin: 92, foot: 2 },
+    b: { hip: [38, 92], torso: -90, upperArm: 116, foreArm: 20, thigh: 2, shin: 92, foot: -42 },
   },
 
-  // Vertical / overhead press, press from the shoulders to lockout.
-  pressV: {
-    archetype: "pressV",
-    base: "stand",
-    implement: "dumbbell",
+  // One-arm DB row — hinged over, one arm drives the elbow up to the ribs.
+  rowOneArm: {
+    archetype: "rowOneArm", base: "stand", implement: "dumbbell", period: 2.2,
+    a: { hip: [50, 74], torso: -20, upperArm: 96, foreArm: 96, thigh: 90, shin: 84, foot: 0 },
+    b: { hip: [50, 74], torso: -20, upperArm: 210, foreArm: 120, thigh: 90, shin: 84, foot: 0 },
+  },
+
+  // Chest-supported row — chest braced on an incline bench, row the elbow back.
+  rowChest: {
+    archetype: "rowChest", base: "stand", implement: "dumbbell", equipment: "inclineBench", period: 2.2,
+    a: { hip: [44, 78], torso: -46, upperArm: 96, foreArm: 98, thigh: 90, shin: 88, foot: 0 },
+    b: { hip: [44, 78], torso: -46, upperArm: 216, foreArm: 122, thigh: 90, shin: 88, foot: 0 },
+  },
+
+  // Standing overhead press — press from the shoulders to lockout.
+  pressOverhead: {
+    archetype: "pressOverhead", base: "stand", implement: "dumbbell", period: 2.2,
     a: from({ upperArm: -40, foreArm: -100 }),
     b: from({ upperArm: -86, foreArm: -90 }),
-    period: 2.2,
   },
 
-  // Horizontal / floor press, on the back, knees bent, press the weights up.
-  pressH: {
-    archetype: "pressH",
-    base: "floor",
-    implement: "dumbbell",
-    // Bottom: elbows down near the floor, weights at chest level.
-    a: {
-      hip: [66, 110],
-      torso: 180, // spine flat on the mat, head to the left
-      upperArm: -60, // upper arm out toward the floor
-      foreArm: -132, // forearm folded, weight low at the chest
-      thigh: -74, // knees bent up
-      shin: 82, // feet flat on the mat
-      foot: 176,
-    },
-    // Top: arms pressed straight up.
-    b: {
-      hip: [66, 110],
-      torso: 180,
-      upperArm: -90, // pressed vertical
-      foreArm: -90,
-      thigh: -74,
-      shin: 82,
-      foot: 176,
-    },
-    period: 2.4,
+  // Seated shoulder press — seated on a bench, press overhead.
+  pressSeated: {
+    archetype: "pressSeated", base: "stand", implement: "dumbbell", equipment: "seat", period: 2.2,
+    a: { hip: [38, 92], torso: -90, upperArm: -40, foreArm: -104, thigh: 2, shin: 92, foot: 2 },
+    b: { hip: [38, 92], torso: -90, upperArm: -86, foreArm: -90, thigh: 2, shin: 92, foot: 2 },
   },
 
-  // Push-up, a rigid diagonal plank; elbows bend, then extend.
+  // Floor press — on the back, knees bent, press the weights up.
+  pressFloor: {
+    archetype: "pressFloor", base: "floor", implement: "dumbbell", period: 2.4,
+    a: { hip: [66, 110], torso: 180, upperArm: -60, foreArm: -132, thigh: -74, shin: 82, foot: 176 },
+    b: { hip: [66, 110], torso: 180, upperArm: -90, foreArm: -90, thigh: -74, shin: 82, foot: 176 },
+  },
+
+  // Incline press — reclined on an incline bench, press up and forward.
+  pressIncline: {
+    archetype: "pressIncline", base: "stand", implement: "dumbbell", equipment: "inclineBench", period: 2.4,
+    a: { hip: [40, 98], torso: -40, upperArm: -66, foreArm: -128, thigh: 30, shin: 66, foot: 6 },
+    b: { hip: [40, 98], torso: -40, upperArm: -80, foreArm: -88, thigh: 30, shin: 66, foot: 6 },
+  },
+
+  // Push-up — a rigid diagonal plank; elbows bend, then extend.
   pushup: {
-    archetype: "pushup",
-    base: "floor",
-    implement: "none",
-    // Down: chest low, elbows bent.
-    a: {
-      hip: [52, 86],
-      torso: 8, // plank line, shoulders forward-right toward the head
-      upperArm: 64, // upper arm angled toward the floor, elbow flared back
-      foreArm: 118,
-      thigh: 152, // legs slope back to the toes
-      shin: 152,
-      foot: 150,
-    },
-    // Up: arms straight, body pressed up.
-    b: {
-      hip: [52, 80],
-      torso: 6,
-      upperArm: 86, // arm straight down to the hand on the floor
-      foreArm: 92,
-      thigh: 150,
-      shin: 150,
-      foot: 150,
-    },
-    period: 2.2,
+    archetype: "pushup", base: "floor", implement: "none", period: 2.2,
+    a: { hip: [52, 86], torso: 8, upperArm: 64, foreArm: 118, thigh: 152, shin: 152, foot: 150 },
+    b: { hip: [52, 80], torso: 6, upperArm: 86, foreArm: 92, thigh: 150, shin: 150, foot: 150 },
   },
 
-  // Lateral raise, arms sweep out to shoulder height.
+  // Lateral raise — arms sweep out to shoulder height (never fully hang).
   lateralRaise: {
-    archetype: "lateralRaise",
-    base: "stand",
-    implement: "dumbbell",
-    a: from({ upperArm: 88, foreArm: 86 }),
+    archetype: "lateralRaise", base: "stand", implement: "dumbbell", period: 2.2,
+    a: from({ upperArm: 50, foreArm: 48 }),
     b: from({ upperArm: 2, foreArm: 6 }),
-    period: 2.2,
   },
 
-  // Rear-delt reverse fly, hinged, arms sweep out and back.
+  // Rear-delt reverse fly — hinged, arms sweep out and back.
   rearFly: {
-    archetype: "rearFly",
-    base: "stand",
-    implement: "dumbbell",
-    a: {
-      hip: [46, 74], // seated left so the swept-out dumbbell plate stays in-frame
-      torso: -20,
-      upperArm: 100,
-      foreArm: 100,
-      thigh: 90,
-      shin: 84,
-      foot: 0,
-    },
-    b: {
-      hip: [46, 74],
-      torso: -20,
-      upperArm: 8,
-      foreArm: 14,
-      thigh: 90,
-      shin: 84,
-      foot: 0,
-    },
-    period: 2.2,
+    archetype: "rearFly", base: "stand", implement: "dumbbell", period: 2.2,
+    a: { hip: [46, 74], torso: -20, upperArm: 100, foreArm: 100, thigh: 90, shin: 84, foot: 0 },
+    b: { hip: [46, 74], torso: -20, upperArm: 8, foreArm: 14, thigh: 90, shin: 84, foot: 0 },
   },
 
-  // Curl, upper arm pinned, forearm arcs up.
+  // Curl — upper arm pinned, forearm arcs up (supinated, bar horizontal).
   curl: {
-    archetype: "curl",
-    base: "stand",
-    implement: "dumbbell",
-    a: from({ upperArm: 96, foreArm: 88 }),
-    b: from({ upperArm: 96, foreArm: -44 }),
-    period: 2.0,
+    archetype: "curl", base: "stand", implement: "dumbbell", period: 2.0,
+    a: from({ upperArm: 96, foreArm: 40 }),
+    b: from({ upperArm: 96, foreArm: -52 }),
   },
 
-  // Triceps extension / skull-crusher, upper arm up, forearm extends.
+  // Hammer curl — same arc, neutral grip (dumbbell held vertical).
+  hammerCurl: {
+    archetype: "hammerCurl", base: "stand", implement: "dumbbellV", period: 2.0,
+    a: from({ upperArm: 96, foreArm: 40 }),
+    b: from({ upperArm: 96, foreArm: -52 }),
+  },
+
+  // Triceps extension / skull-crusher — upper arm up, forearm extends overhead.
   tricepsExt: {
-    archetype: "tricepsExt",
-    base: "stand",
-    implement: "dumbbell",
+    archetype: "tricepsExt", base: "stand", implement: "dumbbell", period: 2.0,
     a: from({ upperArm: -84, foreArm: 40 }),
     b: from({ upperArm: -84, foreArm: -88 }),
-    period: 2.0,
   },
 
-  // Core hold, hollow-body: a shallow crescent floating off the mat, arms
-  // reaching past the head, legs long and low. A held brace with a slow pulse.
-  coreHold: {
-    archetype: "coreHold",
-    base: "floor",
-    implement: "none",
-    a: {
-      hip: [61, 100], // seated so the reaching hand stays inside the left edge
-      torso: 192, // reclined, head low to the left
-      upperArm: 188, // arms reach back past the head
-      foreArm: 190,
-      thigh: -32, // legs raised and long to the right
-      shin: -30,
-      foot: -26,
-    },
-    b: {
-      hip: [61, 98], // slight lift, the brace holding
-      torso: 194,
-      upperArm: 190,
-      foreArm: 193,
-      thigh: -38,
-      shin: -36,
-      foot: -32,
-    },
-    period: 3.4,
+  // Dead bug — on the back, near arm and knee reach up (tabletop), then extend.
+  deadBug: {
+    archetype: "deadBug", base: "floor", implement: "none", period: 3.0,
+    a: { hip: [58, 108], torso: 180, upperArm: -88, foreArm: -90, thigh: -88, shin: 178, foot: 176 },
+    b: { hip: [58, 108], torso: 180, upperArm: -120, foreArm: -118, thigh: -52, shin: -40, foot: -20 },
+  },
+
+  // Hollow-body hold — a shallow crescent off the mat, arms past the head.
+  hollow: {
+    archetype: "hollow", base: "floor", implement: "none", period: 3.4,
+    a: { hip: [56, 100], torso: 192, upperArm: 188, foreArm: 190, thigh: -12, shin: -10, foot: -6 },
+    b: { hip: [56, 98], torso: 194, upperArm: 190, foreArm: 193, thigh: -18, shin: -16, foot: -12 },
+  },
+
+  // Forearm plank — rigid straight body, forearm down on the mat, on the toes.
+  plank: {
+    archetype: "plank", base: "floor", implement: "none", period: 3.2,
+    a: { hip: [54, 92], torso: 6, upperArm: 84, foreArm: 4, thigh: 176, shin: 176, foot: 150 },
+    b: { hip: [54, 91], torso: 5, upperArm: 84, foreArm: 4, thigh: 176, shin: 176, foot: 150 },
   },
 };
 
-// Map each scheduled exercise name to its movement archetype.
+// Map each scheduled exercise name to its movement archetype. Only genuinely
+// identical lifts share one (goblet squat + its burnout).
 const NAME_TO_ARCHETYPE: Record<string, Archetype> = {
   "Goblet Squat": "squat",
   "Goblet Squat (burnout)": "squat",
   "DB Walking Lunge": "lunge",
   "DB Romanian Deadlift": "hinge",
-  "Single-Leg DB RDL": "hinge",
-  "DB Standing Calf Raise": "calfRaise",
-  "DB Seated Calf Raise": "calfRaise",
-  "Dead Bug": "coreHold",
-  "Hollow Body Hold": "coreHold",
-  "Light Core": "coreHold",
-  "One-Arm DB Row": "row",
-  "Chest-Supported DB Row": "row",
-  "DB Overhead Press": "pressV",
-  "DB Shoulder Press": "pressV",
-  "DB Floor Press": "pressH",
-  "Incline Press / Push-up AMRAP": "pressH",
+  "Single-Leg DB RDL": "slRDL",
+  "DB Standing Calf Raise": "calfStand",
+  "DB Seated Calf Raise": "calfSeat",
+  "Dead Bug": "deadBug",
+  "Hollow Body Hold": "hollow",
+  "Light Core": "plank",
+  "One-Arm DB Row": "rowOneArm",
+  "Chest-Supported DB Row": "rowChest",
+  "DB Overhead Press": "pressOverhead",
+  "DB Shoulder Press": "pressSeated",
+  "DB Floor Press": "pressFloor",
+  "Incline Press / Push-up AMRAP": "pressIncline",
   "Push-up AMRAP": "pushup",
   "DB Reverse Fly": "rearFly",
   "DB Lateral Raise": "lateralRaise",
-  "DB Hammer Curl": "curl",
+  "DB Hammer Curl": "hammerCurl",
   "DB Curl": "curl",
   "DB Bulgarian Split Squat": "splitSquat",
   "DB Step-Up": "stepUp",

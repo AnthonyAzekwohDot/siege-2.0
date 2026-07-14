@@ -23,6 +23,16 @@ function Implement({ hand, kind }: { hand: [number, number]; kind: Movement["imp
       </g>
     );
   }
+  if (kind === "dumbbellV") {
+    // Neutral (hammer) grip — the dumbbell held vertical.
+    return (
+      <g className="fill-[hsl(var(--chart-2))] stroke-[hsl(var(--chart-2))]" strokeWidth={2.4} strokeLinecap="round">
+        <line x1={x} y1={y - 6.5} x2={x} y2={y + 6.5} />
+        <rect x={x - 4} y={y - 8.5} width={8} height={4} rx={1.4} stroke="none" />
+        <rect x={x - 4} y={y + 4.5} width={8} height={4} rx={1.4} stroke="none" />
+      </g>
+    );
+  }
   // Dumbbell, a short handle through the hand, a plate at each end.
   return (
     <g className="fill-[hsl(var(--chart-2))] stroke-[hsl(var(--chart-2))]" strokeWidth={2.4} strokeLinecap="round">
@@ -69,8 +79,77 @@ function Body({ j, fill, opacity = 1 }: { j: Joints; fill: string; opacity?: num
   );
 }
 
+// Equipment drawn behind the figure — the main cue that tells two similar
+// movements apart (bench, seat, box, step).
+function Equipment({ mv, j, groundY }: { mv: Movement; j: Joints; groundY: number }) {
+  const eq = mv.equipment ?? "none";
+  const muted = "hsl(var(--muted-foreground))";
+  if (eq === "none") return null;
+
+  if (eq === "box") {
+    return (
+      <rect x={42} y={104} width={28} height={Math.max(6, groundY - 104)} rx={1.5}
+        fill="none" strokeWidth={1.8} stroke={muted} />
+    );
+  }
+  if (eq === "rearBox") {
+    const rx = Math.min(j.ankleB[0], j.toeB[0]) - 3;
+    const ry = Math.min(j.ankleB[1], j.toeB[1]) - 1;
+    return (
+      <rect x={rx} y={ry} width={17} height={Math.max(6, groundY - ry)} rx={1.5}
+        fill="none" strokeWidth={1.8} stroke={muted} />
+    );
+  }
+  if (eq === "stepBlock") {
+    const bx = j.toe[0] - 12;
+    const by = Math.min(j.toe[1], j.ankle[1]) + 1;
+    return (
+      <rect x={bx} y={by} width={20} height={Math.max(5, groundY - by)} rx={1.5}
+        fill="none" strokeWidth={1.8} stroke={muted} />
+    );
+  }
+  if (eq === "seat") {
+    const sx = j.hip[0] - 17;
+    const sw = 42;
+    const sy = j.hip[1] + 3;
+    return (
+      <g stroke={muted} strokeWidth={1.8} strokeLinecap="round">
+        <rect x={sx} y={sy} width={sw} height={4} rx={1} fill={muted} stroke="none" />
+        <line x1={sx + 4} y1={sy + 4} x2={sx + 4} y2={groundY} />
+        <line x1={sx + sw - 4} y1={sy + 4} x2={sx + sw - 4} y2={groundY} />
+      </g>
+    );
+  }
+  if (eq === "inclineBench") {
+    // A bold diagonal pad the torso rests against, poking out past the body,
+    // plus a support leg to the floor.
+    const [hx, hy] = j.hip;
+    const [sx, sy] = j.shoulder;
+    const dx = sx - hx, dy = sy - hy;
+    const len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len, uy = dy / len;
+    let px = -uy, py = ux; // perpendicular, biased to the support (down) side
+    if (py < 0) { px = -px; py = -py; }
+    const off = 12;
+    const aX = hx + px * off - ux * 14, aY = hy + py * off - uy * 14; // extend past the hips
+    const bX = sx + px * off + ux * 16, bY = sy + py * off + uy * 16; // extend past the head
+    return (
+      <g stroke={muted} strokeLinecap="round" fill="none">
+        <line x1={aX} y1={aY} x2={bX} y2={bY} strokeWidth={6} />
+        <line x1={aX} y1={aY} x2={aX} y2={groundY} strokeWidth={2} />
+        <line x1={bX} y1={bY} x2={bX} y2={groundY} strokeWidth={2} />
+      </g>
+    );
+  }
+  return null;
+}
+
 function Figure({ j, mv, groundY }: { j: Joints; mv: Movement; groundY: number }) {
-  const split = mv.archetype === "lunge" || mv.archetype === "splitSquat" || mv.archetype === "stepUp";
+  const split =
+    mv.archetype === "lunge" ||
+    mv.archetype === "splitSquat" ||
+    mv.archetype === "stepUp" ||
+    mv.archetype === "slRDL";
   const fg = "hsl(var(--foreground))";
   return (
     <g>
@@ -84,19 +163,8 @@ function Figure({ j, mv, groundY }: { j: Joints; mv: Movement; groundY: number }
         strokeLinecap="round"
         className="stroke-[hsl(var(--border))]"
       />
-      {/* Step-up box, a fixed platform the lead foot stands on */}
-      {mv.archetype === "stepUp" && (
-        <rect
-          x={42}
-          y={104}
-          width={28}
-          height={Math.max(6, groundY - 104)}
-          rx={1.5}
-          fill="none"
-          strokeWidth={1.8}
-          className="stroke-[hsl(var(--muted-foreground))]"
-        />
-      )}
+
+      <Equipment mv={mv} j={j} groundY={groundY} />
 
       {/* Far (back) leg, behind the body, quieter */}
       {split && (
