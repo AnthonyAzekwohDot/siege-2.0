@@ -3,6 +3,8 @@
 import { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import Link from "next/link";
+import { Dumbbell, ChevronRight } from "lucide-react";
 
 import * as queries from "@/lib/queries";
 import { calculateDailyBudget } from "@/lib/calculations";
@@ -13,7 +15,6 @@ import type { DailyLog, DayOfWeek, InsertMeal, PhotoAnalysis } from "@/lib/types
 
 import { StepRing } from "@/components/dashboard/step-ring";
 import { CalorieBar } from "@/components/dashboard/calorie-bar";
-import { WorkoutCard } from "@/components/dashboard/workout-card";
 import { MealForm } from "@/components/dashboard/meal-form";
 import { FoodSearch } from "@/components/dashboard/food-search";
 import { StepInput } from "@/components/dashboard/step-input";
@@ -112,6 +113,13 @@ export default function DashboardPage() {
     const dow = format(today, "EEEE").toLowerCase() as DayOfWeek;
     return WORKOUT_SCHEDULE.find((s) => s.day === dow) ?? null;
   }, [today]);
+
+  const workoutProgress = useMemo(() => {
+    const exercises = todaySchedule?.exercises ?? [];
+    const logs = dailyLog?.exercise_logs ?? {};
+    const done = exercises.filter((e) => (logs[e.name] ?? []).some((s) => s && s.done)).length;
+    return { done, total: exercises.length };
+  }, [todaySchedule, dailyLog]);
 
   const phase = useMemo(
     () => getTrainingPhase(userProfile?.sprint_start_date, dateKey),
@@ -227,52 +235,6 @@ export default function DashboardPage() {
               photoAnalysis: meal.photoAnalysis,
             },
           ],
-        });
-      }
-      return { previous };
-    },
-    onError: (_err, _arg, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["daily-log", dateKey], context.previous);
-      }
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData(["daily-log", dateKey], data);
-    },
-  });
-
-  const toggleMorningWalkMutation = useMutation<DailyLog, Error, void, { previous?: DailyLog }>({
-    mutationFn: () => queries.toggleMorningWalk(dateKey),
-    onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: ["daily-log", dateKey] });
-      const previous = queryClient.getQueryData<DailyLog>(["daily-log", dateKey]);
-      if (previous) {
-        queryClient.setQueryData(["daily-log", dateKey], {
-          ...previous,
-          morning_walk_completed: !previous.morning_walk_completed,
-        });
-      }
-      return { previous };
-    },
-    onError: (_err, _arg, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["daily-log", dateKey], context.previous);
-      }
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData(["daily-log", dateKey], data);
-    },
-  });
-
-  const toggleEveningWalkMutation = useMutation<DailyLog, Error, void, { previous?: DailyLog }>({
-    mutationFn: () => queries.toggleEveningWalk(dateKey),
-    onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: ["daily-log", dateKey] });
-      const previous = queryClient.getQueryData<DailyLog>(["daily-log", dateKey]);
-      if (previous) {
-        queryClient.setQueryData(["daily-log", dateKey], {
-          ...previous,
-          evening_walk_completed: !previous.evening_walk_completed,
         });
       }
       return { previous };
@@ -643,18 +605,32 @@ export default function DashboardPage() {
         />
       </section>
 
-      {/* ---------- Workout Card ---------- */}
+      {/* ---------- Today's Workout (summary → Workout tab) ---------- */}
       {todaySchedule && (
-        <WorkoutCard
-          schedule={todaySchedule}
-          date={dateKey}
-          exerciseLogs={dailyLog.exercise_logs ?? {}}
-          morningWalkCompleted={dailyLog.morning_walk_completed}
-          eveningWalkCompleted={dailyLog.evening_walk_completed}
-          phase={phase}
-          onToggleMorningWalk={() => toggleMorningWalkMutation.mutate()}
-          onToggleEveningWalk={() => toggleEveningWalkMutation.mutate()}
-        />
+        <Link
+          href="/schedule"
+          className="glass-card flex items-center gap-4 p-5 active:scale-[0.99] transition-transform"
+        >
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--chart-2))/0.15]">
+            <Dumbbell className="h-5 w-5 text-[hsl(var(--chart-2))]" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+              Today&apos;s Workout
+            </h3>
+            <p className="truncate text-base font-bold text-[hsl(var(--foreground))]">
+              {todaySchedule.focus}
+            </p>
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+              {workoutProgress.total === 0
+                ? "Rest day, the work is the walk"
+                : workoutProgress.done >= workoutProgress.total
+                  ? "Done, line held"
+                  : `${workoutProgress.done}/${workoutProgress.total} done, tap to log`}
+            </p>
+          </div>
+          <ChevronRight className="h-5 w-5 shrink-0 text-[hsl(var(--muted-foreground))]" />
+        </Link>
       )}
     </div>
   );

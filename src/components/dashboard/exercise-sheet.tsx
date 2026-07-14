@@ -7,6 +7,8 @@ import { getProgressionTarget, exerciseSeries } from "@/lib/overload";
 import { exerciseFormKey, exerciseMovement } from "@/lib/exercise-guide";
 import { LiftChart } from "@/components/dashboard/lift-chart";
 import { MuscleMap, musclesToKeys } from "@/components/dashboard/muscle-map";
+import { FormDiagram } from "@/components/dashboard/form-diagram";
+import { movementFor } from "@/lib/form-figure";
 
 interface ExerciseSheetProps {
   exercise: Exercise;
@@ -26,6 +28,7 @@ export function ExerciseSheet({ exercise, date, targetSets, isDeload = false, on
   const formKey = exerciseFormKey(exercise.name);
   const movement = exerciseMovement(exercise.name);
   const worked = musclesToKeys(exercise.muscleGroups);
+  const figure = movementFor(exercise.name);
 
   const bestE1RM = series.reduce((m, p) => Math.max(m, p.topE1RM), 0);
   const bestReps = series.reduce((m, p) => Math.max(m, p.topReps), 0);
@@ -50,15 +53,39 @@ export function ExerciseSheet({ exercise, date, targetSets, isDeload = false, on
         </div>
 
         <div className="space-y-4 p-5">
-          {/* Muscles worked + movement */}
+          {/* The movement — animated form figure */}
+          {figure && (
+            <section>
+              <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                The movement
+              </h4>
+              <div className="flex flex-col items-center rounded-xl bg-[hsl(var(--muted))] py-3">
+                <FormDiagram movement={figure} exerciseName={exercise.name} height={188} />
+                {movement && (
+                  <div className="mt-1 flex items-center gap-1.5 text-xs">
+                    <Activity aria-hidden className="h-3.5 w-3.5 text-[hsl(var(--chart-2))]" />
+                    <span className="font-medium text-[hsl(var(--foreground))]">{movement}</span>
+                  </div>
+                )}
+              </div>
+              {formKey && (
+                <p className="mt-2 text-sm">
+                  <span className="font-semibold text-[hsl(var(--foreground))]">Form key: </span>
+                  <span className="text-[hsl(var(--foreground))]">{formKey}</span>
+                </p>
+              )}
+            </section>
+          )}
+
+          {/* Muscles worked */}
           <section>
             <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
               Muscles worked
             </h4>
             <MuscleMap worked={worked} />
-            {movement && (
+            {!figure && movement && (
               <div className="mt-2 flex items-center justify-center gap-1.5 text-xs">
-                <Activity className="h-3.5 w-3.5 text-[hsl(var(--primary))]" />
+                <Activity aria-hidden className="h-3.5 w-3.5 text-[hsl(var(--primary))]" />
                 <span className="text-[hsl(var(--muted-foreground))]">Movement:</span>
                 <span className="font-medium text-[hsl(var(--foreground))]">{movement}</span>
               </div>
@@ -103,9 +130,9 @@ export function ExerciseSheet({ exercise, date, targetSets, isDeload = false, on
             {exercise.instructions && (
               <p className="text-sm leading-relaxed text-[hsl(var(--foreground))]">{exercise.instructions}</p>
             )}
-            {formKey && (
+            {!figure && formKey && (
               <p className="mt-2 text-sm">
-                <span className="font-semibold text-[hsl(var(--primary))]">Form key: </span>
+                <span className="font-semibold text-[hsl(var(--foreground))]">Form key: </span>
                 <span className="text-[hsl(var(--foreground))]">{formKey}</span>
               </p>
             )}
