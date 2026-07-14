@@ -18,8 +18,19 @@ import type { InsertMeal } from "@/lib/types";
 
 export function TonightLock() {
   const [open, setOpen] = React.useState(false);
+  const dismissedRef = React.useRef(false);
   const queryClient = useQueryClient();
   const dateKey = format(new Date(), "yyyy-MM-dd");
+
+  // Close for good: mark it shown for today so the parent gate stops re-rendering
+  // it, and never auto-reopen this mount.
+  const handleClose = React.useCallback(() => {
+    dismissedRef.current = true;
+    setOpen(false);
+    queries
+      .markTonightLockShown(dateKey)
+      .finally(() => queryClient.invalidateQueries({ queryKey: ["tonight-lock", dateKey] }));
+  }, [dateKey, queryClient]);
 
   const { data: dailyLog } = useQuery({
     queryKey: ["daily-log", dateKey],
@@ -60,24 +71,18 @@ export function TonightLock() {
     },
   });
 
-  // Auto-show after 8pm
+  // Open once when the data is ready. The parent only renders this component at
+  // the user's configured lock time (and only if not already shown today), so no
+  // hardcoded hour check here — and once dismissed it never springs back open.
   React.useEffect(() => {
-    const check = () => {
-      const hour = new Date().getHours();
-      if (hour >= 20 && derived) {
-        setOpen(true);
-      }
-    };
-    check();
-    const interval = setInterval(check, 60_000);
-    return () => clearInterval(interval);
+    if (derived && !dismissedRef.current) setOpen(true);
   }, [derived]);
 
   if (!derived) return null;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent onClose={() => setOpen(false)}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
+      <DialogContent onClose={handleClose}>
         <DialogHeader>
           <div className="flex items-center gap-2">
             <Moon className="h-5 w-5 text-[hsl(var(--primary))]" />

@@ -685,6 +685,9 @@ export async function syncStepsExertion(date: string, steps: number): Promise<vo
 // ============ WEIGHT TRACKING ============
 
 export async function logWeight(date: string, weightKg: number): Promise<DailyLog> {
+  // Ensure the day's row exists — Progress/Settings don't call getOrCreateDailyLog,
+  // so an UPDATE alone would match 0 rows and throw when logging weight there.
+  await getOrCreateDailyLog(date);
   const { data, error } = await supabase
     .from("daily_logs")
     .update({ weight_kg: weightKg })

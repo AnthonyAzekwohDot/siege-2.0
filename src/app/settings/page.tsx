@@ -126,7 +126,11 @@ export default function SettingsPage() {
   });
 
   const handleSave = () => {
-    saveMutation.mutate(form);
+    // Never persist a blank/undefined field (would zero-out BMR/TDEE inputs).
+    const clean = Object.fromEntries(
+      Object.entries(form).filter(([, v]) => v !== null && v !== undefined)
+    ) as UpdateUserProfile;
+    saveMutation.mutate(clean);
   };
 
   const updateField = <K extends keyof UpdateUserProfile>(
@@ -209,7 +213,7 @@ export default function SettingsPage() {
               type="number"
               value={form.weight_kg ?? ""}
               onChange={(e) =>
-                updateField("weight_kg", Number(e.target.value))
+                updateField("weight_kg", e.target.value === "" ? undefined : Number(e.target.value))
               }
               className="w-[100px] text-right"
             />
@@ -219,7 +223,7 @@ export default function SettingsPage() {
               type="number"
               value={form.height_cm ?? ""}
               onChange={(e) =>
-                updateField("height_cm", Number(e.target.value))
+                updateField("height_cm", e.target.value === "" ? undefined : Number(e.target.value))
               }
               className="w-[100px] text-right"
             />
@@ -229,7 +233,7 @@ export default function SettingsPage() {
               type="number"
               value={form.age ?? ""}
               onChange={(e) =>
-                updateField("age", Number(e.target.value))
+                updateField("age", e.target.value === "" ? undefined : Number(e.target.value))
               }
               className="w-[100px] text-right"
             />
@@ -321,7 +325,7 @@ export default function SettingsPage() {
               type="number"
               value={form.deficit_target ?? ""}
               onChange={(e) =>
-                updateField("deficit_target", Number(e.target.value))
+                updateField("deficit_target", e.target.value === "" ? undefined : Number(e.target.value))
               }
               className="w-[100px] text-right"
             />

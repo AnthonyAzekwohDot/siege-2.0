@@ -230,9 +230,11 @@ export default function NutritionPage() {
         setCameraOpen(false);
         setReviewData(result.analysis);
       } else {
+        setCameraOpen(false); // surface the body-level error (it renders behind the camera)
         setAnalysisError("Could not analyse photo. Try again.");
       }
     } catch {
+      setCameraOpen(false);
       setAnalysisError("Photo analysis failed. Try again.");
     } finally {
       setIsAnalyzing(false);
@@ -597,10 +599,15 @@ export default function NutritionPage() {
         suggestedMealType="lunch"
         clarificationNeeded={null}
         onConfirm={(items, totalCal) => {
+          const sum = (k: "proteinG" | "carbsG" | "fatG") =>
+            Math.round(items.reduce((s, i) => s + (i[k] ?? 0), 0) * 10) / 10;
           addMealMutation.mutate({
             name: items.map(i => i.name).join(" + ") || "Meal",
             calories: totalCal,
             source: "photo_ai",
+            proteinG: sum("proteinG"), // so AI-estimated protein counts toward the floor
+            carbsG: sum("carbsG"),
+            fatG: sum("fatG"),
             photoAnalysis: { detectedItems: items, totalCalories: totalCal, estimationQualityScore: reviewData?.estimationQualityScore ?? 0.5 },
           });
           setReviewData(null);

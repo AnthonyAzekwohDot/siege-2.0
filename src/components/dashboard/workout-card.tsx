@@ -201,7 +201,8 @@ function ExerciseLogger({
   }
 
   function isPR(entry: { load: number | null; reps: number | null }): boolean {
-    if (exercise.isBodyweight) return (entry.reps ?? 0) > 0 && (entry.reps ?? 0) >= bestReps && bestReps > 0;
+    // Strict: a PR must BEAT the best, not tie it (matches the card's own copy).
+    if (exercise.isBodyweight) return (entry.reps ?? 0) > bestReps && bestReps > 0;
     return est1RM(entry.load, entry.reps) > bestE1RM && bestE1RM > 0;
   }
 
@@ -242,7 +243,8 @@ function ExerciseLogger({
         {Array.from({ length: targetSets }, (_, i) => {
           const entry = todaySets[i];
           const vals = entry ?? { ...defaultsFor(i), done: false };
-          const pr = isPR(vals);
+          // Only badge a PR on a row the user has actually logged, not a prefilled default.
+          const pr = entry != null && isPR(vals);
           return (
             <SetRow
               key={i}
@@ -303,24 +305,20 @@ function SetRow({
   onToggleDone: () => void;
 }) {
   return (
-    <div className={cn("flex items-center gap-2 rounded-md px-1 py-1", done && "bg-[hsl(var(--chart-3))/0.1]")}>
-      <span className="w-4 text-center text-xs font-semibold text-[hsl(var(--muted-foreground))]">{index + 1}</span>
+    <div className={cn("flex items-center gap-1.5 rounded-xl px-1.5 py-1 transition-colors", done && "bg-[hsl(var(--chart-3))/0.1]")}>
+      <span className="w-4 shrink-0 text-center text-xs font-semibold tabular-nums text-[hsl(var(--muted-foreground))]">{index + 1}</span>
 
       {!isBodyweight && <Stepper value={load ?? 0} unit="kg" onStep={onLoadDelta} />}
 
-      <Stepper value={reps ?? 0} unit={isBodyweight ? "reps" : "x"} onStep={onRepsDelta} />
+      <Stepper value={reps ?? 0} unit={isBodyweight ? "reps" : "reps"} onStep={onRepsDelta} />
 
-      {pr && (
-        <span className="flex items-center gap-0.5 text-[10px] font-bold text-[hsl(var(--chart-4))]">
-          <Trophy className="h-3 w-3" /> PR
-        </span>
-      )}
+      {pr && <Trophy className="h-4 w-4 shrink-0 text-[hsl(var(--chart-4))]" aria-label="Personal record" />}
 
       <button
         onClick={onToggleDone}
         aria-label={done ? "Mark set not done" : "Mark set done"}
         className={cn(
-          "ml-auto flex h-9 w-9 items-center justify-center rounded-lg border transition-colors",
+          "ml-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-all active:scale-90",
           done
             ? "border-[hsl(var(--chart-3))] bg-[hsl(var(--chart-3))] text-white"
             : "border-[hsl(var(--input))] text-[hsl(var(--muted-foreground))]"
@@ -334,6 +332,7 @@ function SetRow({
   );
 }
 
+// A connected segmented stepper: [ − | value | + ], one clean unit, 44px tall.
 function Stepper({
   value,
   unit,
@@ -344,22 +343,22 @@ function Stepper({
   onStep: (delta: number) => void;
 }) {
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-stretch overflow-hidden rounded-xl border border-[hsl(var(--input))]">
       <button
         onClick={() => onStep(-1)}
-        aria-label="decrease"
-        className="flex h-9 w-9 items-center justify-center rounded-lg border border-[hsl(var(--input))] text-[hsl(var(--muted-foreground))] active:bg-[hsl(var(--muted))]"
+        aria-label={`decrease ${unit}`}
+        className="grid h-11 w-9 place-items-center text-[hsl(var(--muted-foreground))] transition-colors active:bg-[hsl(var(--muted))]"
       >
         <Minus className="h-3.5 w-3.5" />
       </button>
-      <div className="min-w-[3rem] text-center">
-        <span className="text-sm font-bold tabular-nums">{value}</span>
-        <span className="ml-0.5 text-[10px] text-[hsl(var(--muted-foreground))]">{unit}</span>
+      <div className="flex h-11 min-w-[2.85rem] flex-col items-center justify-center border-x border-[hsl(var(--input))] px-1">
+        <span className="text-sm font-bold leading-none tabular-nums">{value}</span>
+        <span className="mt-0.5 text-[8.5px] font-medium uppercase leading-none tracking-wide text-[hsl(var(--muted-foreground))]">{unit}</span>
       </div>
       <button
         onClick={() => onStep(1)}
-        aria-label="increase"
-        className="flex h-9 w-9 items-center justify-center rounded-lg border border-[hsl(var(--input))] text-[hsl(var(--muted-foreground))] active:bg-[hsl(var(--muted))]"
+        aria-label={`increase ${unit}`}
+        className="grid h-11 w-9 place-items-center text-[hsl(var(--muted-foreground))] transition-colors active:bg-[hsl(var(--muted))]"
       >
         <Plus className="h-3.5 w-3.5" />
       </button>
@@ -387,15 +386,16 @@ function RestTimer({ endsAt, onClose, onAdd }: { endsAt: number; onClose: () => 
   }, [remaining, onClose]);
 
   return (
-    <div className="fixed inset-x-0 bottom-20 z-40 mx-auto flex max-w-2xl items-center gap-3 px-4">
-      <div className="flex flex-1 items-center gap-3 rounded-xl bg-[hsl(var(--foreground))] px-4 py-2.5 text-[hsl(var(--background))] shadow-lg">
-        <Timer className="h-4 w-4" />
+    // Pinned just below the header so it never covers the set you're logging.
+    <div className="fixed inset-x-0 top-[60px] z-40 mx-auto flex max-w-2xl items-center px-4">
+      <div className="flex flex-1 items-center gap-3 rounded-full bg-[hsl(var(--foreground))] px-4 py-2.5 text-[hsl(var(--background))] shadow-lg">
+        <Timer className="h-4 w-4 shrink-0" />
         <span className="text-sm font-bold tabular-nums">{remaining}s</span>
         <span className="text-xs opacity-70">rest</span>
-        <button onClick={onAdd} className="ml-auto rounded-md bg-white/15 px-2 py-1 text-xs font-medium">
+        <button onClick={onAdd} className="ml-auto rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium active:scale-95">
           +30s
         </button>
-        <button onClick={onClose} aria-label="skip rest" className="rounded-md p-1">
+        <button onClick={onClose} aria-label="skip rest" className="flex h-8 w-8 items-center justify-center rounded-full active:bg-white/15">
           <X className="h-4 w-4" />
         </button>
       </div>
