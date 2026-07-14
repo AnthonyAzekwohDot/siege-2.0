@@ -35,9 +35,9 @@ export function ExerciseSheet({ exercise, date, targetSets, isDeload = false, on
   const bestLabel = bestE1RM > 0 ? `${bestE1RM.toFixed(1)}kg e1RM` : bestReps > 0 ? `${bestReps} reps` : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
-        className="w-full max-w-2xl max-h-[88dvh] overflow-y-auto rounded-t-2xl bg-[hsl(var(--card))]"
+        className="w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-2xl bg-[hsl(var(--card))]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
